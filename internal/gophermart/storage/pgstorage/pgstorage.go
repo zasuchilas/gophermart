@@ -5,6 +5,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
+	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"go.uber.org/zap"
 )
 
@@ -29,4 +30,14 @@ func New() *PgStorage {
 	return &PgStorage{
 		db: db,
 	}
+}
+
+func (d *PgStorage) Stop() {
+	if d.db != nil {
+		_ = d.db.Close()
+	}
+}
+
+func (d *PgStorage) InstanceName() string {
+	return storage.InstancePostgresql
 }

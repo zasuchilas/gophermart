@@ -11,6 +11,7 @@ var (
 	AccrualSystemAddress string
 	LogLevel             string
 	EnvType              string
+	SecretKey            string
 )
 
 func ParseFlags() {
@@ -19,6 +20,7 @@ func ParseFlags() {
 	flag.StringVar(&AccrualSystemAddress, "r", "localhost:8081", "address of the accrual calculation service")
 	flag.StringVar(&LogLevel, "l", "info", "logging level")
 	flag.StringVar(&EnvType, "e", "production", "type of environment (production or develop)")
+	flag.StringVar(&SecretKey, "k", "supersecretkey", "the secret key for user tokens")
 	flag.Parse()
 
 	envflags.TryUseEnvString(&RunAddress, "RUN_ADDRESS")
