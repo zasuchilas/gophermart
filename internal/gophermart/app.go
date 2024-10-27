@@ -1,6 +1,10 @@
 package gophermart
 
-import "sync"
+import (
+	"github.com/zasuchilas/gophermart/internal/gophermart/config"
+	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
+	"sync"
+)
 
 type App struct {
 	AppName    string
@@ -9,7 +13,7 @@ type App struct {
 }
 
 func New() *App {
-	parseFlags()
+	config.ParseFlags()
 	wg := &sync.WaitGroup{}
 
 	return &App{
@@ -20,5 +24,7 @@ func New() *App {
 }
 
 func (a *App) Run() {
+	logger.Init()
+	logger.ServiceInfo("GOPHERMART (... service)", a.AppVersion)
 
 }
