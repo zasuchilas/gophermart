@@ -78,7 +78,7 @@ func (s *ChiServer) login(w http.ResponseWriter, r *http.Request) {
 
 	// validation
 	if len(req.Login) < 3 || len(req.Password) < 6 {
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
