@@ -1,7 +1,9 @@
 package chisrv
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/model"
@@ -58,6 +60,54 @@ func (s *ChiServer) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// authorize user
+	setJWTCookie(w, userID)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *ChiServer) login(w http.ResponseWriter, r *http.Request) {
+
+	// decoding request
+	var req model.LoginRequest
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// validation
+	if len(req.Login) < 3 || len(req.Password) < 6 {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// get data from db
+	loginData, err := s.store.GetLoginData(r.Context(), req.Login, req.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		logger.Log.Debug("cannot get login data from db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// check password hash
+	ok := passhash.CheckPasswordHash(req.Password, loginData.PasswordHash)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// authorize user
+	setJWTCookie(w, loginData.UserID)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func setJWTCookie(w http.ResponseWriter, userID int64) {
 	token := makeToken(userID)
 	http.SetCookie(w, &http.Cookie{
 		//HttpOnly: true,
@@ -67,14 +117,6 @@ func (s *ChiServer) register(w http.ResponseWriter, r *http.Request) {
 		Name:  "jwt", // Must be named "jwt" or else the token cannot be searched for by jwtauth.Verifier.
 		Value: token,
 	})
-
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *ChiServer) login(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service "))
 }
 
 func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {

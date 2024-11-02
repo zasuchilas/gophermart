@@ -6,6 +6,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
+	"github.com/zasuchilas/gophermart/internal/gophermart/model"
 	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"go.uber.org/zap"
 )
@@ -47,8 +48,16 @@ func (d *PgStorage) Register(ctx context.Context, login, pass string) (userID in
 	var id int64
 	err = d.db.QueryRowContext(
 		ctx,
-		"INSERT INTO users (name, pass) VALUES($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+		"INSERT INTO users (login, pass_hash) VALUES($1, $2) ON CONFLICT DO NOTHING RETURNING id",
 		login, pass,
 	).Scan(&id)
 	return id, err
+}
+
+func (d *PgStorage) GetLoginData(ctx context.Context, login, password string) (*model.LoginData, error) {
+	var v model.LoginData
+	err := d.db.QueryRowContext(ctx,
+		"SELECT id, login, pass_hash FROM users WHERE login = $1 AND deleted = false",
+		login).Scan(&v.UserID, &v.Login, &v.PasswordHash)
+	return &v, err
 }
