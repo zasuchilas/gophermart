@@ -1,0 +1,141 @@
+package chisrv
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
+	"github.com/zasuchilas/gophermart/internal/gophermart/model"
+	"github.com/zasuchilas/gophermart/pkg/passhash"
+	"go.uber.org/zap"
+	"net/http"
+	"time"
+)
+
+func (s *ChiServer) home(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service "))
+}
+
+func (s *ChiServer) register(w http.ResponseWriter, r *http.Request) {
+
+	// decoding request
+	var req model.RegisterRequest
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// validation
+	if len(req.Login) < 3 {
+		http.Error(w, "login is shorter than 3", http.StatusBadRequest)
+		return
+	}
+	if len(req.Password) < 6 {
+		http.Error(w, "password is shorter than 6", http.StatusBadRequest)
+		return
+	}
+
+	// make password hash
+	pass, err := passhash.HashPassword(req.Password)
+	if err != nil {
+		http.Error(w, "failed to create a password hash", http.StatusInternalServerError)
+		return
+	}
+
+	// write into db
+	userID, err := s.store.Register(r.Context(), req.Login, pass)
+	if userID == 0 {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	if err != nil {
+		logger.Log.Error("failed to write new user into db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// authorize user
+	token := makeToken(userID)
+	http.SetCookie(w, &http.Cookie{
+		//HttpOnly: true,
+		Expires: time.Now().Add(100 * 24 * time.Hour),
+		//SameSite: http.SameSiteLaxMode,
+		// Secure: true,
+		Name:  "jwt", // Must be named "jwt" or else the token cannot be searched for by jwtauth.Verifier.
+		Value: token,
+	})
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *ChiServer) login(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service "))
+}
+
+func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("loadNewOrder")
+
+	userID, err := getUserID(r)
+	if err != nil {
+		fmt.Println("ERRRR")
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+}
+
+func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+}
+
+func (s *ChiServer) getUserBalance(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+}
+
+func (s *ChiServer) withdrawFromBalance(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+}
+
+func (s *ChiServer) getWithdrawalList(w http.ResponseWriter, r *http.Request) {
+	userID, err := getUserID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+}

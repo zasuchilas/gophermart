@@ -37,6 +37,7 @@ func (a *App) Run() {
 	logger.Init()
 	logger.ServiceInfo("GOPHERMART (... service)", a.AppVersion)
 	a.store = pgstorage.New()
+	chisrv.InitJWT()
 	a.server = chisrv.New(a.store)
 	a.waitGroup.Add(1)
 	go a.server.Start()

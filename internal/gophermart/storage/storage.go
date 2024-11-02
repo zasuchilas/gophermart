@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 )
 
@@ -17,4 +18,6 @@ var (
 type Storage interface {
 	Stop()
 	InstanceName() string
+
+	Register(ctx context.Context, login, passHash string) (int64, error)
 }

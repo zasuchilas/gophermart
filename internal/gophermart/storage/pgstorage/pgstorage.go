@@ -1,6 +1,7 @@
 package pgstorage
 
 import (
+	"context"
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
@@ -40,4 +41,14 @@ func (d *PgStorage) Stop() {
 
 func (d *PgStorage) InstanceName() string {
 	return storage.InstancePostgresql
+}
+
+func (d *PgStorage) Register(ctx context.Context, login, pass string) (userID int64, err error) {
+	var id int64
+	err = d.db.QueryRowContext(
+		ctx,
+		"INSERT INTO users (name, pass) VALUES($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+		login, pass,
+	).Scan(&id)
+	return id, err
 }

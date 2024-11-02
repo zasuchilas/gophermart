@@ -3,6 +3,7 @@ package chisrv
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
@@ -41,29 +42,19 @@ func (s *ChiServer) router() chi.Router {
 
 	// routes
 	r.Get("/", s.home)
-	//r.Get("/{shortURL}", s.readURLHandler)
-	//r.Get("/ping", s.ping)
+	r.Post("/api/user/register", s.register)
+	r.Post("/api/user/login", s.login)
 
-	// routes with guard (if there is no valid token returns error 401 Unauthorized)
-	//r.Group(func(r chi.Router) {
-	//	r.Use(s.secure.GuardMiddleware)
-	//	r.Get("/api/user/urls", s.userURLsHandler)
-	//	r.Delete("/api/user/urls", s.deleteURLsHandler)
-	//})
+	r.Group(func(r chi.Router) {
+		r.Use(jwtauth.Verifier(tokenAuth))
+		r.Use(jwtauth.Authenticator(tokenAuth))
 
-	// routes with secure cookie (if there is no valid token assigns a new token)
-	//r.Group(func(r chi.Router) {
-	//	r.Use(s.secure.SecureMiddleware)
-	//	r.Post("/", s.writeURLHandler)
-	//	r.Post("/api/shorten", s.shortenHandler)
-	//	r.Post("/api/shorten/batch", s.shortenBatchHandler)
-	//})
+		r.Post("/api/user/orders", s.loadNewOrder)
+		r.Get("/api/user/orders", s.getUserOrders)
+		r.Get("/api/user/balance", s.getUserBalance)
+		r.Post("/api/user/balance/withdraw", s.withdrawFromBalance)
+		r.Get("/api/user/withdrawals", s.getWithdrawalList)
+	})
 
 	return r
-}
-
-func (s *ChiServer) home(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service GOPHERMART service "))
 }

@@ -17,15 +17,7 @@ func createTablesIfNeed(db *sql.DB) {
 		CREATE TABLE IF NOT EXISTS users (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(254) NOT NULL UNIQUE,
-			pass VARCHAR(254) NOT NULL,
-			salt VARCHAR(254) NOT NULL
-		);
-
-		CREATE TABLE IF NOT EXISTS losers (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(254) NOT NULL UNIQUE,
-			pass VARCHAR(254) NOT NULL,
-			salt VARCHAR(254) NOT NULL
+			pass VARCHAR(254) NOT NULL
 		);
 		
   `
