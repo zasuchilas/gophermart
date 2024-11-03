@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/theplant/luhn"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/model"
 	"github.com/zasuchilas/gophermart/pkg/passhash"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -120,18 +123,38 @@ func setJWTCookie(w http.ResponseWriter, userID int64) {
 }
 
 func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("loadNewOrder")
 
 	userID, err := getUserID(r)
 	if err != nil {
-		fmt.Println("ERRRR")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
+	// decoding request
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	order, err := strconv.Atoi(string(body))
+	if err != nil {
+		http.Error(w, "the order number must be a number", http.StatusBadRequest)
+		return
+	}
+
+	// luna validation
+	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
+	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
+	if ok := luhn.Valid(order); !ok {
+		http.Error(w, "luna validation failed", http.StatusUnprocessableEntity)
+		return
+	}
+
+	// writing into db
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d, oredr: %d", userID, order))))
 }
 
 func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
