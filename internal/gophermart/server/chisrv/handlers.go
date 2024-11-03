@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/theplant/luhn"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
-	"github.com/zasuchilas/gophermart/internal/gophermart/model"
+	"github.com/zasuchilas/gophermart/internal/gophermart/models"
 	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"github.com/zasuchilas/gophermart/pkg/passhash"
 	"go.uber.org/zap"
@@ -26,7 +26,7 @@ func (s *ChiServer) home(w http.ResponseWriter, _ *http.Request) {
 func (s *ChiServer) register(w http.ResponseWriter, r *http.Request) {
 
 	// decoding request
-	var req model.RegisterRequest
+	var req models.RegisterRequest
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
 		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
@@ -72,7 +72,7 @@ func (s *ChiServer) register(w http.ResponseWriter, r *http.Request) {
 func (s *ChiServer) login(w http.ResponseWriter, r *http.Request) {
 
 	// decoding request
-	var req model.LoginRequest
+	var req models.LoginRequest
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
 		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
@@ -173,15 +173,33 @@ func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
+
 	userID, err := getUserID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+	// reading from db
+	orders, err := s.store.GetUserOrders(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		logger.Log.Info("reading from db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	if err = enc.Encode(orders); err != nil {
+		logger.Log.Info("error encoding response", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logger.Log.Debug("sending HTTP 200 response")
 }
 
 func (s *ChiServer) getUserBalance(w http.ResponseWriter, r *http.Request) {

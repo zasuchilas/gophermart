@@ -8,7 +8,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
-	"github.com/zasuchilas/gophermart/internal/gophermart/model"
+	"github.com/zasuchilas/gophermart/internal/gophermart/models"
 	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"go.uber.org/zap"
 	"time"
@@ -57,8 +57,8 @@ func (d *PgStorage) Register(ctx context.Context, login, pass string) (userID in
 	return id, err
 }
 
-func (d *PgStorage) GetLoginData(ctx context.Context, login, password string) (*model.LoginData, error) {
-	var v model.LoginData
+func (d *PgStorage) GetLoginData(ctx context.Context, login, password string) (*models.LoginData, error) {
+	var v models.LoginData
 	err := d.db.QueryRowContext(ctx,
 		"SELECT id, login, pass_hash FROM users WHERE login = $1 AND deleted = false",
 		login).Scan(&v.UserID, &v.Login, &v.PasswordHash)
@@ -126,4 +126,50 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, number int)
 	}
 
 	return nil
+}
+
+func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.OrderData, error) {
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm,
+		`SELECT number, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return nil, fmt.Errorf("the operation was canceled")
+	default:
+		rows, er := stmt.QueryContext(ctxTm, userID)
+		if er != nil {
+			return nil, er
+		}
+		defer rows.Close()
+
+		orders := make(models.OrderData, 0)
+		for rows.Next() {
+			var v models.Order
+			err = rows.Scan(&v.Number, &v.Status, &v.Accrual, &v.UploadedAt)
+			if err != nil {
+				return nil, err
+			}
+			orders = append(orders, &v)
+		}
+
+		err = rows.Err()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(orders) == 0 {
+
+			return nil, storage.ErrNotFound
+		}
+
+		return orders, nil
+	}
 }

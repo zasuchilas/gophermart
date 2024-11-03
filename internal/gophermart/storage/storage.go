@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"errors"
-	"github.com/zasuchilas/gophermart/internal/gophermart/model"
+	"github.com/zasuchilas/gophermart/internal/gophermart/models"
 )
 
 const (
@@ -24,6 +24,7 @@ type Storage interface {
 	InstanceName() string
 
 	Register(ctx context.Context, login, passHash string) (int64, error)
-	GetLoginData(ctx context.Context, login, password string) (*model.LoginData, error)
+	GetLoginData(ctx context.Context, login, password string) (*models.LoginData, error)
 	RegisterOrder(ctx context.Context, userID int64, number int) error
+	GetUserOrders(ctx context.Context, userID int64) (models.OrderData, error)
 }
