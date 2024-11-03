@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Rhymond/go-money"
 	"github.com/theplant/luhn"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/models"
@@ -227,15 +228,55 @@ func (s *ChiServer) getUserBalance(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ChiServer) withdrawFromBalance(w http.ResponseWriter, r *http.Request) {
+
 	userID, err := getUserID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	// decoding request
+	var req models.WithdrawRequest
+	dec := json.NewDecoder(r.Body)
+	if err = dec.Decode(&req); err != nil {
+		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// luna validation
+	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
+	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
+	orderNum, err := strconv.Atoi(req.Order)
+	if err != nil {
+		http.Error(w, "the order number must be a number", http.StatusUnprocessableEntity)
+		return
+	}
+	if ok := luhn.Valid(orderNum); !ok {
+		http.Error(w, "luna validation failed", http.StatusUnprocessableEntity)
+		return
+	}
+
+	// money validation and transform
+	sum := money.NewFromFloat(req.Sum, money.RUB) //.Amount()
+	if sum.IsZero() || sum.IsNegative() {
+		http.Error(w, "the sum must be a positive number", http.StatusBadRequest)
+		return
+	}
+
+	// write into db
+	err = s.store.WithdrawTransaction(r.Context(), userID, orderNum, sum)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotEnoughFunds) {
+			w.WriteHeader(http.StatusPaymentRequired)
+			return
+		}
+		logger.Log.Info("writing into db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
 }
 
 func (s *ChiServer) getWithdrawalList(w http.ResponseWriter, r *http.Request) {

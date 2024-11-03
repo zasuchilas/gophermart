@@ -66,7 +66,7 @@ func (d *PgStorage) GetLoginData(ctx context.Context, login, password string) (*
 	return &v, err
 }
 
-func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, number int) error {
+func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum int) error {
 
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -78,7 +78,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, number int)
 	defer tx.Rollback()
 
 	stmt1, err := tx.PrepareContext(ctxTm,
-		"SELECT user_id FROM orders WHERE number = $1;")
+		"SELECT user_id FROM orders WHERE order_num = $1;")
 	if err != nil {
 		logger.Log.Error("preparing select stmt", zap.Error(err))
 		return err
@@ -86,7 +86,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, number int)
 	defer stmt1.Close()
 
 	stmt2, err := tx.PrepareContext(ctxTm,
-		"INSERT INTO orders (number, user_id) VALUES ($1, $2);")
+		"INSERT INTO orders (order_num, user_id) VALUES ($1, $2);")
 	if err != nil {
 		logger.Log.Error("preparing insert stmt", zap.Error(err))
 		return err
@@ -98,7 +98,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, number int)
 		return fmt.Errorf("the operation was canceled on select stmt")
 	default:
 		var storedUserID int64
-		err = stmt1.QueryRowContext(ctxTm, number).Scan(&storedUserID)
+		err = stmt1.QueryRowContext(ctxTm, orderNum).Scan(&storedUserID)
 		orderFound := err == nil
 		errorWithoutNotFound := err != nil && !errors.Is(err, sql.ErrNoRows)
 		if orderFound {
@@ -115,7 +115,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, number int)
 	case <-ctxTm.Done():
 		return fmt.Errorf("the operation was canceled on insert stmt")
 	default:
-		_, err = stmt2.ExecContext(ctx, number, userID)
+		_, err = stmt2.ExecContext(ctx, orderNum, userID)
 		if err != nil {
 			return err
 		}
@@ -135,7 +135,7 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT number, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
+		`SELECT order_num, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 				accrual    int64
 				uploadedAt time.Time
 			)
-			err = rows.Scan(&v.Number, &v.Status, &accrual, &uploadedAt)
+			err = rows.Scan(&v.OrderNum, &v.Status, &accrual, &uploadedAt)
 			if err != nil {
 				return nil, err
 			}
@@ -210,4 +210,108 @@ func (d *PgStorage) GetUserBalance(ctx context.Context, userID int64) (*models.U
 		v.Withdrawn = money.New(withdrawn, money.RUB).AsMajorUnits()
 		return &v, nil
 	}
+}
+
+func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, orderNum int, sum *money.Money) error {
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	tx, err := d.db.BeginTx(ctxTm, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	checkStmt, err := tx.PrepareContext(ctxTm,
+		"SELECT balance, withdrawn FROM users WHERE id = $1;")
+	if err != nil {
+		logger.Log.Error("preparing check stmt", zap.Error(err))
+		return err
+	}
+	defer checkStmt.Close()
+
+	withdrawalsStmt, err := tx.PrepareContext(ctxTm,
+		"INSERT INTO withdrawals (user_id, order_num, amount) VALUES ($1, $2, $3);")
+	if err != nil {
+		logger.Log.Error("preparing withdrawals stmt", zap.Error(err))
+		return err
+	}
+	defer withdrawalsStmt.Close()
+
+	balanceStmt, err := tx.PrepareContext(ctxTm,
+		"UPDATE users SET balance = $1, withdrawn = $2 WHERE id = $3;")
+	if err != nil {
+		logger.Log.Error("preparing balance stmt", zap.Error(err))
+		return err
+	}
+	defer balanceStmt.Close()
+
+	var (
+		balance   int64
+		withdrawn int64
+	)
+
+	select {
+	case <-ctxTm.Done():
+		return fmt.Errorf("the operation was canceled on check stmt")
+	default:
+		err = checkStmt.QueryRowContext(ctxTm, userID).Scan(&balance, &withdrawn)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return fmt.Errorf("user not found (userID %d", userID)
+			}
+			return err
+		}
+		currentBalance := money.New(balance, money.RUB)
+		nextBalance, er := currentBalance.Subtract(sum)
+		if er != nil {
+			return fmt.Errorf("error in calculating the new balance (current balance %f, sum %f)",
+				currentBalance.AsMajorUnits(), sum.AsMajorUnits())
+		}
+		if nextBalance.IsNegative() {
+			return storage.ErrNotEnoughFunds
+		}
+		currentWithdrawn := money.New(withdrawn, money.RUB)
+		nextWithdrawn, er := currentWithdrawn.Add(sum)
+		if er != nil {
+			return fmt.Errorf("error in calculating the new withdrawn (current withdrawn %f, sum %f)",
+				currentWithdrawn.AsMajorUnits(), sum.AsMajorUnits())
+		}
+
+		// new values for db
+		balance = nextBalance.Amount()
+		withdrawn = nextWithdrawn.Amount()
+	}
+
+	select {
+	case <-ctxTm.Done():
+		return fmt.Errorf("the operation was canceled on withdrawals stmt")
+	default:
+		_, err = withdrawalsStmt.ExecContext(ctx,
+			userID, orderNum, sum.Amount(),
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	select {
+	case <-ctxTm.Done():
+		return fmt.Errorf("the operation was canceled on balance stmt")
+	default:
+		_, err = balanceStmt.ExecContext(ctx,
+			balance, withdrawn, userID,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
