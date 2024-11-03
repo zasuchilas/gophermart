@@ -19,7 +19,9 @@ func createTablesIfNeed(db *sql.DB) {
 			login VARCHAR(254) NOT NULL UNIQUE,
 			pass_hash VARCHAR(254) NOT NULL,
 			created_at TIMESTAMP NOT NULL DEFAULT now(),
-			deleted BOOL NOT NULL DEFAULT false
+			deleted BOOL NOT NULL DEFAULT false,
+		  balance INTEGER NOT NULL DEFAULT 0,
+		  withdrawn INTEGER NOT NULL DEFAULT 0
 		);
 		CREATE INDEX IF NOT EXISTS idx_login ON users (login);
 		CREATE INDEX IF NOT EXISTS idx_deleted ON users (deleted);

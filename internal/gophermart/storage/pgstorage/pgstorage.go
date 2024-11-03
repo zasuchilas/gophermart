@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Rhymond/go-money"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
@@ -134,7 +135,7 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT number, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at`)
+		`SELECT number, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -152,11 +153,17 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 
 		orders := make(models.OrderData, 0)
 		for rows.Next() {
-			var v models.Order
-			err = rows.Scan(&v.Number, &v.Status, &v.Accrual, &v.UploadedAt)
+			var (
+				v          models.Order
+				accrual    int64
+				uploadedAt time.Time
+			)
+			err = rows.Scan(&v.Number, &v.Status, &accrual, &uploadedAt)
 			if err != nil {
 				return nil, err
 			}
+			v.Accrual = money.New(accrual, money.RUB).AsMajorUnits()
+			v.UploadedAt = uploadedAt.Format(time.RFC3339)
 			orders = append(orders, &v)
 		}
 
