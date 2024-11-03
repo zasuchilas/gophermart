@@ -315,3 +315,54 @@ func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, order
 
 	return nil
 }
+
+func (d *PgStorage) GetUserWithdrawals(ctx context.Context, userID int64) (models.WithdrawalsData, error) {
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm,
+		`SELECT order_num, amount, processed_at FROM withdrawals WHERE user_id = $1 ORDER BY processed_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return nil, fmt.Errorf("the operation was canceled")
+	default:
+		rows, er := stmt.QueryContext(ctxTm, userID)
+		if er != nil {
+			return nil, er
+		}
+		defer rows.Close()
+
+		withdrawals := make(models.WithdrawalsData, 0)
+		for rows.Next() {
+			var (
+				v           models.Withdrawal
+				amount      int64
+				processedAt time.Time
+			)
+			err = rows.Scan(&v.OrderNum, &amount, &processedAt)
+			if err != nil {
+				return nil, err
+			}
+			v.Sum = money.New(amount, money.RUB).AsMajorUnits()
+			v.ProcessedAt = processedAt.Format(time.RFC3339)
+			withdrawals = append(withdrawals, &v)
+		}
+
+		err = rows.Err()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(withdrawals) == 0 {
+			return nil, storage.ErrNotFound
+		}
+
+		return withdrawals, nil
+	}
+}

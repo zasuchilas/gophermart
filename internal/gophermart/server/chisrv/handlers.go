@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/Rhymond/go-money"
 	"github.com/theplant/luhn"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
@@ -280,13 +279,30 @@ func (s *ChiServer) withdrawFromBalance(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *ChiServer) getWithdrawalList(w http.ResponseWriter, r *http.Request) {
+
 	userID, err := getUserID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+	// reading from db
+	withdrawals, err := s.store.GetUserWithdrawals(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		logger.Log.Info("reading from db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	if err = enc.Encode(withdrawals); err != nil {
+		logger.Log.Info("error encoding response", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }

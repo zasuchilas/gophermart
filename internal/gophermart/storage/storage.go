@@ -31,4 +31,5 @@ type Storage interface {
 	GetUserOrders(ctx context.Context, userID int64) (models.OrderData, error)
 	GetUserBalance(ctx context.Context, userID int64) (*models.UserBalance, error)
 	WithdrawTransaction(ctx context.Context, userID int64, orderNum int, sum *money.Money) error
+	GetUserWithdrawals(ctx context.Context, userID int64) (models.WithdrawalsData, error)
 }
