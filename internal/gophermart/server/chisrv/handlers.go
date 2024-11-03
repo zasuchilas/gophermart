@@ -8,6 +8,7 @@ import (
 	"github.com/theplant/luhn"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/model"
+	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"github.com/zasuchilas/gophermart/pkg/passhash"
 	"go.uber.org/zap"
 	"io"
@@ -136,25 +137,39 @@ func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	order, err := strconv.Atoi(string(body))
+	number, err := strconv.Atoi(string(body))
 	if err != nil {
-		http.Error(w, "the order number must be a number", http.StatusBadRequest)
+		http.Error(w, "the number number must be a number", http.StatusBadRequest)
 		return
 	}
 
 	// luna validation
 	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
 	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
-	if ok := luhn.Valid(order); !ok {
+	if ok := luhn.Valid(number); !ok {
 		http.Error(w, "luna validation failed", http.StatusUnprocessableEntity)
 		return
 	}
 
 	// writing into db
+	err = s.store.RegisterOrder(r.Context(), userID, number)
+	if err != nil {
+		if errors.Is(err, storage.ErrNumberDone) {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if errors.Is(err, storage.ErrNumberAdded) {
+			w.WriteHeader(http.StatusConflict)
+		}
+		logger.Log.Info("writing into db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d, oredr: %d", userID, order))))
+	// adding an order number to processing
+	// TODO:
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
