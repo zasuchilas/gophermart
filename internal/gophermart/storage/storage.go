@@ -27,4 +27,5 @@ type Storage interface {
 	GetLoginData(ctx context.Context, login, password string) (*models.LoginData, error)
 	RegisterOrder(ctx context.Context, userID int64, number int) error
 	GetUserOrders(ctx context.Context, userID int64) (models.OrderData, error)
+	GetUserBalance(ctx context.Context, userID int64) (*models.UserBalance, error)
 }

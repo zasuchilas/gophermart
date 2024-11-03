@@ -199,19 +199,31 @@ func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logger.Log.Debug("sending HTTP 200 response")
 }
 
 func (s *ChiServer) getUserBalance(w http.ResponseWriter, r *http.Request) {
+
 	userID, err := getUserID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte((fmt.Sprintf("userID: %d", userID))))
+	// reading from db
+	balance, err := s.store.GetUserBalance(r.Context(), userID)
+	if err != nil {
+		logger.Log.Info("reading from db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	if err = enc.Encode(balance); err != nil {
+		logger.Log.Info("error encoding response", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *ChiServer) withdrawFromBalance(w http.ResponseWriter, r *http.Request) {

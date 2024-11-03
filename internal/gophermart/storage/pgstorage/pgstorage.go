@@ -173,10 +173,41 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 		}
 
 		if len(orders) == 0 {
-
 			return nil, storage.ErrNotFound
 		}
 
 		return orders, nil
+	}
+}
+
+func (d *PgStorage) GetUserBalance(ctx context.Context, userID int64) (*models.UserBalance, error) {
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm,
+		`SELECT balance, withdrawn FROM users WHERE id = $1`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return nil, fmt.Errorf("the operation was canceled")
+	default:
+		var (
+			v         models.UserBalance
+			current   int64
+			withdrawn int64
+		)
+		er := stmt.QueryRowContext(ctxTm, userID).
+			Scan(&current, &withdrawn)
+		if er != nil {
+			return nil, er
+		}
+		v.Current = money.New(current, money.RUB).AsMajorUnits()
+		v.Withdrawn = money.New(withdrawn, money.RUB).AsMajorUnits()
+		return &v, nil
 	}
 }
