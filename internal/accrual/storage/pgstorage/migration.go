@@ -28,7 +28,7 @@ func createTablesIfNeed(db *sql.DB) {
 
 		CREATE TABLE IF NOT EXISTS accrual.goods (
 		  id SERIAL PRIMARY KEY,
-		  match VARCHAR(254) NOT NULL,
+		  match VARCHAR(254) NOT NULL UNIQUE,
 		  reward INT NOT NULL,
 		  reward_type VARCHAR(25) NOT NULL,
 		  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()

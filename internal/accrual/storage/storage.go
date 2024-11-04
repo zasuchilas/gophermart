@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 )
 
@@ -21,4 +22,6 @@ var (
 type Storage interface {
 	Stop()
 	InstanceName() string
+
+	RegisterNewGoods(ctx context.Context, match, rewardType string, reward int) (int64, error)
 }

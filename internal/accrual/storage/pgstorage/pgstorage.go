@@ -1,6 +1,7 @@
 package pgstorage
 
 import (
+	"context"
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/accrual/config"
@@ -40,4 +41,14 @@ func (d *PgStorage) Stop() {
 
 func (d *PgStorage) InstanceName() string {
 	return storage.InstancePostgresql
+}
+
+func (d *PgStorage) RegisterNewGoods(ctx context.Context, match, rewardType string, reward int) (int64, error) {
+	var id int64
+	err := d.db.QueryRowContext(
+		ctx,
+		"INSERT INTO accrual.goods (match, reward, reward_type) VALUES($1, $2, $3) ON CONFLICT DO NOTHING RETURNING id",
+		match, reward, rewardType,
+	).Scan(&id)
+	return id, err
 }

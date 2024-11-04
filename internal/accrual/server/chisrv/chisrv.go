@@ -41,6 +41,8 @@ func (s *ChiServer) router() chi.Router {
 
 	// routes
 	r.Get("/", s.home)
+	r.Post("/api/orders", s.registerOrder)
+	r.Post("/api/goods", s.registerGoods)
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Throttle(3)) // 15
