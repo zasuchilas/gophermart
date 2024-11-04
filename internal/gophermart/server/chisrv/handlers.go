@@ -139,7 +139,7 @@ func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	number, err := strconv.Atoi(string(body))
 	if err != nil {
-		http.Error(w, "the number number must be a number", http.StatusBadRequest)
+		http.Error(w, "the order number must be a number", http.StatusBadRequest)
 		return
 	}
 

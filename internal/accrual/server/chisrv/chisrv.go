@@ -42,5 +42,10 @@ func (s *ChiServer) router() chi.Router {
 	// routes
 	r.Get("/", s.home)
 
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Throttle(3)) // 15
+		r.Get("/api/orders/{orderNum}", s.getOrderAccrual)
+	})
+
 	return r
 }

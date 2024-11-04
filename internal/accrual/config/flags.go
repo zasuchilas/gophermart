@@ -13,7 +13,7 @@ var (
 )
 
 func ParseFlags() {
-	flag.StringVar(&RunAddress, "a", "localhost:8080", "address and port to run server")
+	flag.StringVar(&RunAddress, "a", "localhost:8081", "address and port to run server")
 	flag.StringVar(&DatabaseURI, "d", "", "database connection string")
 	flag.StringVar(&LogLevel, "l", "info", "logging level")
 	flag.StringVar(&EnvType, "e", "production", "type of environment (production or develop)")

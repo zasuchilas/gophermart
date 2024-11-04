@@ -52,7 +52,7 @@ func (d *PgStorage) Register(ctx context.Context, login, pass string) (userID in
 	var id int64
 	err = d.db.QueryRowContext(
 		ctx,
-		"INSERT INTO users (login, pass_hash) VALUES($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+		"INSERT INTO gophermart.users (login, pass_hash) VALUES($1, $2) ON CONFLICT DO NOTHING RETURNING id",
 		login, pass,
 	).Scan(&id)
 	return id, err
@@ -61,7 +61,7 @@ func (d *PgStorage) Register(ctx context.Context, login, pass string) (userID in
 func (d *PgStorage) GetLoginData(ctx context.Context, login, password string) (*models.LoginData, error) {
 	var v models.LoginData
 	err := d.db.QueryRowContext(ctx,
-		"SELECT id, login, pass_hash FROM users WHERE login = $1 AND deleted = false",
+		"SELECT id, login, pass_hash FROM gophermart.users WHERE login = $1 AND deleted = false",
 		login).Scan(&v.UserID, &v.Login, &v.PasswordHash)
 	return &v, err
 }
@@ -78,7 +78,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum in
 	defer tx.Rollback()
 
 	stmt1, err := tx.PrepareContext(ctxTm,
-		"SELECT user_id FROM orders WHERE order_num = $1;")
+		"SELECT user_id FROM gophermart.orders WHERE order_num = $1;")
 	if err != nil {
 		logger.Log.Error("preparing select stmt", zap.Error(err))
 		return err
@@ -86,7 +86,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum in
 	defer stmt1.Close()
 
 	stmt2, err := tx.PrepareContext(ctxTm,
-		"INSERT INTO orders (order_num, user_id) VALUES ($1, $2);")
+		"INSERT INTO gophermart.orders (order_num, user_id) VALUES ($1, $2);")
 	if err != nil {
 		logger.Log.Error("preparing insert stmt", zap.Error(err))
 		return err
@@ -135,7 +135,7 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT order_num, status, accrual, uploaded_at FROM orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
+		`SELECT order_num, status, accrual, uploaded_at FROM gophermart.orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (d *PgStorage) GetUserBalance(ctx context.Context, userID int64) (*models.U
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT balance, withdrawn FROM users WHERE id = $1`)
+		`SELECT balance, withdrawn FROM gophermart.users WHERE id = $1`)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +224,7 @@ func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, order
 	defer tx.Rollback()
 
 	checkStmt, err := tx.PrepareContext(ctxTm,
-		"SELECT balance, withdrawn FROM users WHERE id = $1;")
+		"SELECT balance, withdrawn FROM gophermart.users WHERE id = $1;")
 	if err != nil {
 		logger.Log.Error("preparing check stmt", zap.Error(err))
 		return err
@@ -232,7 +232,7 @@ func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, order
 	defer checkStmt.Close()
 
 	withdrawalsStmt, err := tx.PrepareContext(ctxTm,
-		"INSERT INTO withdrawals (user_id, order_num, amount) VALUES ($1, $2, $3);")
+		"INSERT INTO gophermart.withdrawals (user_id, order_num, amount) VALUES ($1, $2, $3);")
 	if err != nil {
 		logger.Log.Error("preparing withdrawals stmt", zap.Error(err))
 		return err
@@ -240,7 +240,7 @@ func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, order
 	defer withdrawalsStmt.Close()
 
 	balanceStmt, err := tx.PrepareContext(ctxTm,
-		"UPDATE users SET balance = $1, withdrawn = $2 WHERE id = $3;")
+		"UPDATE gophermart.users SET balance = $1, withdrawn = $2 WHERE id = $3;")
 	if err != nil {
 		logger.Log.Error("preparing balance stmt", zap.Error(err))
 		return err
@@ -322,7 +322,7 @@ func (d *PgStorage) GetUserWithdrawals(ctx context.Context, userID int64) (model
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT order_num, amount, processed_at FROM withdrawals WHERE user_id = $1 ORDER BY processed_at DESC`)
+		`SELECT order_num, amount, processed_at FROM gophermart.withdrawals WHERE user_id = $1 ORDER BY processed_at DESC`)
 	if err != nil {
 		return nil, err
 	}

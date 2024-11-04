@@ -14,7 +14,9 @@ func createTablesIfNeed(db *sql.DB) {
 	defer cancel()
 
 	q := `
-		CREATE TABLE IF NOT EXISTS users (
+		CREATE SCHEMA IF NOT EXISTS gophermart;
+
+		CREATE TABLE IF NOT EXISTS gophermart.users (
 			id SERIAL PRIMARY KEY,
 			login VARCHAR(254) NOT NULL UNIQUE,
 			pass_hash VARCHAR(254) NOT NULL,
@@ -23,10 +25,10 @@ func createTablesIfNeed(db *sql.DB) {
 		  balance INTEGER NOT NULL DEFAULT 0,
 		  withdrawn INTEGER NOT NULL DEFAULT 0
 		);
-		CREATE INDEX IF NOT EXISTS idx_login ON users (login);
-		CREATE INDEX IF NOT EXISTS idx_deleted ON users (deleted);
+		CREATE INDEX IF NOT EXISTS idx_login ON gophermart.users (login);
+		CREATE INDEX IF NOT EXISTS idx_deleted ON gophermart.users (deleted);
 
-		CREATE TABLE IF NOT EXISTS orders (
+		CREATE TABLE IF NOT EXISTS gophermart.orders (
 			id SERIAL PRIMARY KEY,
 			order_num INT8 NOT NULL UNIQUE,
 			status VARCHAR(25) NOT NULL DEFAULT 'NEW',
@@ -34,9 +36,9 @@ func createTablesIfNeed(db *sql.DB) {
 		  user_id INT8 REFERENCES users (id),
 			uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 		);
-		CREATE INDEX IF NOT EXISTS idx_status ON orders (status);
+		CREATE INDEX IF NOT EXISTS idx_status ON gophermart.orders (status);
 
-		CREATE TABLE IF NOT EXISTS withdrawals (
+		CREATE TABLE IF NOT EXISTS gophermart.withdrawals (
 		  id SERIAL PRIMARY KEY,
 		  user_id INT8 REFERENCES users (id),
 		  order_num INT8 NOT NULL, -- not related to table orders
