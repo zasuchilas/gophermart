@@ -1,7 +1,9 @@
 package chisrv
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/go-chi/chi/v5"
 	"github.com/theplant/luhn"
 	"github.com/zasuchilas/gophermart/internal/accrual/logger"
@@ -19,7 +21,7 @@ func (s *ChiServer) home(w http.ResponseWriter, _ *http.Request) {
 
 func (s *ChiServer) getOrderAccrual(w http.ResponseWriter, r *http.Request) {
 
-	number := chi.URLParam(r, "orderNumRaw")
+	number := chi.URLParam(r, "orderNum")
 	if number == "" {
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -39,10 +41,24 @@ func (s *ChiServer) getOrderAccrual(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// reading from db
+	orderData, err := s.store.GetOrderData(r.Context(), orderNum)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		logger.Log.Info("cannot get order data from db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(""))
+	w.Header().Set("Content-Type", "application/json")
+	enc := json.NewEncoder(w)
+	if err = enc.Encode(orderData); err != nil {
+		logger.Log.Info("error encoding response", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (s *ChiServer) registerOrder(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +67,7 @@ func (s *ChiServer) registerOrder(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterOrderRequest
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
-		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		logger.Log.Info("cannot decode request JSON body", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -101,7 +117,7 @@ func (s *ChiServer) registerGoods(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterGoodsRequest
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
-		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		logger.Log.Info("cannot decode request JSON body", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -127,7 +143,7 @@ func (s *ChiServer) registerGoods(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		logger.Log.Error("failed to write new goods into db", zap.String("error", err.Error()))
+		logger.Log.Info("failed to write new goods into db", zap.String("error", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

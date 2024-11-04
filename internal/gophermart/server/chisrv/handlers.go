@@ -75,7 +75,7 @@ func (s *ChiServer) login(w http.ResponseWriter, r *http.Request) {
 	var req models.LoginRequest
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
-		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		logger.Log.Info("cannot decode request JSON body", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -93,7 +93,7 @@ func (s *ChiServer) login(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		logger.Log.Debug("cannot get login data from db", zap.String("error", err.Error()))
+		logger.Log.Info("cannot get login data from db", zap.String("error", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

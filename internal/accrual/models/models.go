@@ -15,3 +15,9 @@ type GoodsPosition struct {
 	Description string  `json:"description"`
 	Price       float64 `json:"price"`
 }
+
+type OrderData struct {
+	Order   string  `json:"order"`
+	Status  string  `json:"status"`
+	Accrual float64 `json:"accrual"`
+}

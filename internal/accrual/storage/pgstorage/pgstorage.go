@@ -3,9 +3,11 @@ package pgstorage
 import (
 	"context"
 	"database/sql"
+	"github.com/Rhymond/go-money"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/accrual/config"
 	"github.com/zasuchilas/gophermart/internal/accrual/logger"
+	"github.com/zasuchilas/gophermart/internal/accrual/models"
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
 	"go.uber.org/zap"
 )
@@ -61,4 +63,18 @@ func (d *PgStorage) RegisterNewOrder(ctx context.Context, orderNum int, receipt 
 		orderNum, receipt,
 	).Scan(&id)
 	return id, err
+}
+
+func (d *PgStorage) GetOrderData(ctx context.Context, orderNum int) (*models.OrderData, error) {
+	var (
+		v       models.OrderData
+		accrual int64
+	)
+	err := d.db.QueryRowContext(ctx,
+		"SELECT order_num, status, accrual FROM gophermart.orders WHERE order_num = $1",
+		orderNum).Scan(&v.Order, &v.Status, &accrual)
+
+	v.Accrual = money.New(accrual, money.RUB).AsMajorUnits()
+
+	return &v, err
 }
