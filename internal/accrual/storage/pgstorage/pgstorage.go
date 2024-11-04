@@ -52,3 +52,13 @@ func (d *PgStorage) RegisterNewGoods(ctx context.Context, match, rewardType stri
 	).Scan(&id)
 	return id, err
 }
+
+func (d *PgStorage) RegisterNewOrder(ctx context.Context, orderNum int, receipt string) (int64, error) {
+	var id int64
+	err := d.db.QueryRowContext(
+		ctx,
+		"INSERT INTO accrual.orders (order_num, receipt) VALUES($1, $2) ON CONFLICT DO NOTHING RETURNING id",
+		orderNum, receipt,
+	).Scan(&id)
+	return id, err
+}

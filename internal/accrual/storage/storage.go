@@ -24,4 +24,5 @@ type Storage interface {
 	InstanceName() string
 
 	RegisterNewGoods(ctx context.Context, match, rewardType string, reward int) (int64, error)
+	RegisterNewOrder(ctx context.Context, orderNum int, receipt string) (int64, error)
 }

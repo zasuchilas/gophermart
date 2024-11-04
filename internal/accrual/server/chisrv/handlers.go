@@ -46,9 +46,53 @@ func (s *ChiServer) getOrderAccrual(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ChiServer) registerOrder(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(""))
+
+	// decoding request
+	var req models.RegisterOrderRequest
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil {
+		logger.Log.Debug("cannot decode request JSON body", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// getting receipt
+	receipt, err := json.Marshal(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// validation
+	if req.Order == "" {
+		http.Error(w, "the order number is required", http.StatusBadRequest)
+		return
+	}
+	orderNum, err := strconv.Atoi(req.Order)
+	if err != nil {
+		http.Error(w, "the order number must be a number", http.StatusBadRequest)
+		return
+	}
+	// luna validation
+	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
+	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
+	if ok := luhn.Valid(orderNum); !ok {
+		http.Error(w, "luna validation failed", http.StatusBadRequest)
+		return
+	}
+
+	// writing into db
+	id, err := s.store.RegisterNewOrder(r.Context(), orderNum, string(receipt))
+	if id == 0 {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	if err != nil {
+		logger.Log.Error("failed to write new order into db", zap.String("error", err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (s *ChiServer) registerGoods(w http.ResponseWriter, r *http.Request) {
