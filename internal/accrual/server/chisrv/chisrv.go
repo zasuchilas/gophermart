@@ -45,7 +45,7 @@ func (s *ChiServer) router() chi.Router {
 	r.Post("/api/goods", s.registerGoods)
 
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.Throttle(3)) // 15
+		r.Use(middleware.Throttle(15))
 		r.Get("/api/orders/{orderNum}", s.getOrderAccrual)
 	})
 
