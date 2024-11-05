@@ -1,12 +1,14 @@
 package models
 
-type RegisterGoodsRequest struct {
-	Match      string `json:"match"`
-	Reward     int    `json:"reward"`
-	RewardType string `json:"reward_type"`
+import "time"
+
+type GoodsData struct {
+	Match      string  `json:"match"`
+	Reward     float64 `json:"reward"`
+	RewardType string  `json:"reward_type"`
 }
 
-type RegisterOrderRequest struct {
+type Receipt struct {
 	Order string `json:"order"`
 	Goods []GoodsPosition
 }
@@ -20,4 +22,13 @@ type OrderData struct {
 	Order   string  `json:"order"`
 	Status  string  `json:"status"`
 	Accrual float64 `json:"accrual"`
+}
+
+type AccrualOrder struct {
+	ID         int64
+	OrderNum   string
+	Status     string
+	Accrual    float64
+	Receipt    *Receipt
+	UploadedAt time.Time
 }

@@ -64,7 +64,7 @@ func (s *ChiServer) getOrderAccrual(w http.ResponseWriter, r *http.Request) {
 func (s *ChiServer) registerOrder(w http.ResponseWriter, r *http.Request) {
 
 	// decoding request
-	var req models.RegisterOrderRequest
+	var req models.Receipt
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
 		logger.Log.Info("cannot decode request JSON body", zap.Error(err))
@@ -114,7 +114,7 @@ func (s *ChiServer) registerOrder(w http.ResponseWriter, r *http.Request) {
 func (s *ChiServer) registerGoods(w http.ResponseWriter, r *http.Request) {
 
 	// decoding request
-	var req models.RegisterGoodsRequest
+	var req models.GoodsData
 	dec := json.NewDecoder(r.Body)
 	if err := dec.Decode(&req); err != nil {
 		logger.Log.Info("cannot decode request JSON body", zap.Error(err))

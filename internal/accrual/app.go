@@ -7,6 +7,7 @@ import (
 	"github.com/zasuchilas/gophermart/internal/accrual/server/chisrv"
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
 	"github.com/zasuchilas/gophermart/internal/accrual/storage/pgstorage"
+	"github.com/zasuchilas/gophermart/internal/accrual/worker"
 	"go.uber.org/zap"
 	"os"
 	"os/signal"
@@ -20,6 +21,7 @@ type App struct {
 	waitGroup  *sync.WaitGroup
 	store      storage.Storage
 	server     server.Server
+	worker     *worker.CalculateAccrualWorker
 }
 
 func New() *App {
@@ -37,9 +39,14 @@ func (a *App) Run() {
 	logger.Init()
 	logger.ServiceInfo("ACCRUAL.GOPHERMART (... service)", a.AppVersion)
 	a.store = pgstorage.New()
+
 	a.server = chisrv.New(a.store)
 	a.waitGroup.Add(1)
 	go a.server.Start()
+
+	a.worker = worker.New(a.store)
+	a.worker.Start()
+
 	a.shutdown()
 	a.waitGroup.Wait()
 }
@@ -53,6 +60,7 @@ func (a *App) shutdown() {
 		logger.Log.Info("The stop signal has been received", zap.String("signal", sig.String()))
 		close(sigChan)
 
+		a.worker.Stop()
 		a.store.Stop()
 		a.server.Stop()
 

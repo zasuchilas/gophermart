@@ -19,7 +19,7 @@ func createTablesIfNeed(db *sql.DB) {
 		CREATE TABLE IF NOT EXISTS accrual.orders (
 			id SERIAL PRIMARY KEY,
 			order_num INT8 NOT NULL UNIQUE,
-			status VARCHAR(25) NOT NULL DEFAULT 'NEW',
+			status VARCHAR(25) NOT NULL DEFAULT 'REGISTERED',
 			accrual INTEGER NOT NULL DEFAULT 0,
 		  receipt TEXT NOT NULL DEFAULT '',
 			uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
@@ -31,7 +31,8 @@ func createTablesIfNeed(db *sql.DB) {
 		  match VARCHAR(254) NOT NULL UNIQUE,
 		  reward INT NOT NULL,
 		  reward_type VARCHAR(25) NOT NULL,
-		  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+		  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+		  deleted BOOL NOT NULL DEFAULT false
 		);
 		
   `

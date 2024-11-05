@@ -3,6 +3,8 @@ package pgstorage
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"github.com/Rhymond/go-money"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/zasuchilas/gophermart/internal/accrual/config"
@@ -10,6 +12,7 @@ import (
 	"github.com/zasuchilas/gophermart/internal/accrual/models"
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
 	"go.uber.org/zap"
+	"time"
 )
 
 type PgStorage struct {
@@ -45,7 +48,7 @@ func (d *PgStorage) InstanceName() string {
 	return storage.InstancePostgresql
 }
 
-func (d *PgStorage) RegisterNewGoods(ctx context.Context, match, rewardType string, reward int) (int64, error) {
+func (d *PgStorage) RegisterNewGoods(ctx context.Context, match, rewardType string, reward float64) (int64, error) {
 	var id int64
 	err := d.db.QueryRowContext(
 		ctx,
@@ -71,10 +74,132 @@ func (d *PgStorage) GetOrderData(ctx context.Context, orderNum int) (*models.Ord
 		accrual int64
 	)
 	err := d.db.QueryRowContext(ctx,
-		"SELECT order_num, status, accrual FROM gophermart.orders WHERE order_num = $1",
+		"SELECT order_num, status, accrual FROM accrual.orders WHERE order_num = $1",
 		orderNum).Scan(&v.Order, &v.Status, &accrual)
 
 	v.Accrual = money.New(accrual, money.RUB).AsMajorUnits()
 
 	return &v, err
+}
+
+func (d *PgStorage) GetGoods(ctx context.Context) ([]*models.GoodsData, error) {
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm, `SELECT match, reward, reward_type FROM accrual.goods WHERE deleted = false`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return nil, fmt.Errorf("the operation was canceled")
+	default:
+		rows, er := stmt.QueryContext(ctxTm)
+		if er != nil {
+			return nil, er
+		}
+		defer rows.Close()
+
+		goods := make([]*models.GoodsData, 0)
+		for rows.Next() {
+			var gd models.GoodsData
+			err = rows.Scan(&gd.Match, &gd.Reward, &gd.RewardType)
+			if err != nil {
+				return nil, err
+			}
+			goods = append(goods, &gd)
+		}
+
+		err = rows.Err()
+		if err != nil {
+			return nil, err
+		}
+
+		return goods, nil
+	}
+}
+
+func (d *PgStorage) GetOrders(ctx context.Context) ([]*models.AccrualOrder, error) {
+	statuses := []string{
+		storage.OrderStatusNew,
+		storage.OrderStatusRegistered,
+		storage.OrderStatusProcessing,
+	}
+	limit := config.WorkerPackLimit
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm,
+		`SELECT id, order_num, status, accrual, receipt, uploaded_at FROM accrual.orders WHERE status = any($1) LIMIT $2`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return nil, fmt.Errorf("the operation was canceled")
+	default:
+		rows, er := stmt.QueryContext(ctxTm, statuses, limit)
+		if er != nil {
+			return nil, er
+		}
+		defer rows.Close()
+
+		orders := make([]*models.AccrualOrder, 0)
+		for rows.Next() {
+			var (
+				gd      models.AccrualOrder
+				receipt string
+				rc      models.Receipt
+			)
+			err = rows.Scan(&gd.ID, &gd.OrderNum, &gd.Status, &gd.Accrual, &receipt, &gd.UploadedAt)
+			if err != nil {
+				return nil, err
+			}
+			err = json.Unmarshal([]byte(receipt), &rc)
+			if err == nil {
+				gd.Receipt = &rc
+			}
+			orders = append(orders, &gd)
+		}
+
+		err = rows.Err()
+		if err != nil {
+			return nil, err
+		}
+
+		return orders, nil
+	}
+}
+
+func (d *PgStorage) UpdateOrder(ctx context.Context, id int64, status string, accrual float64) error {
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm,
+		"UPDATE accrual.orders SET status = $1, accrual = $2 WHERE id = $3;")
+	if err != nil {
+		logger.Log.Error("preparing balance stmt", zap.Error(err))
+		return err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return fmt.Errorf("the operation was canceled")
+	default:
+		_, err = stmt.ExecContext(ctx,
+			status, accrual, id,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
