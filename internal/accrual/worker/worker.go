@@ -38,6 +38,7 @@ loop:
 			// time to working
 
 			// TODO: generator -> worker pool
+			//  - sharing access to shared data
 
 			// getting goods
 			goods, err := w.store.GetGoods(context.TODO())
