@@ -128,7 +128,9 @@ func (w *OrderEnrichWorker) workerProc(jobs <-chan *models.OrderRow) {
 		// decoding response
 		var resp models.OrderStateResponse
 		dec := json.NewDecoder(response.Body)
-		if err = dec.Decode(&resp); err != nil {
+		err = dec.Decode(&resp)
+		response.Body.Close()
+		if err != nil {
 			logger.Log.Info("cannot decode response JSON body", zap.String("error", err.Error()))
 			continue // ??
 		}
