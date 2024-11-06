@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -50,6 +51,6 @@ func createTablesIfNeed(db *sql.DB) {
 
 	_, err := db.ExecContext(ctx, q)
 	if err != nil {
-		logger.Log.Fatal("creating postgresql tables")
+		logger.Log.Fatal("creating postgresql tables", zap.String("error", err.Error()))
 	}
 }
