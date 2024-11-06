@@ -3,10 +3,12 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/Rhymond/go-money"
 	"github.com/zasuchilas/gophermart/internal/accrual/config"
 	"github.com/zasuchilas/gophermart/internal/accrual/logger"
 	"github.com/zasuchilas/gophermart/internal/accrual/models"
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
+	"github.com/zasuchilas/gophermart/internal/common"
 	"go.uber.org/zap"
 	"strings"
 	"sync"
@@ -97,7 +99,7 @@ func (w *CalculateAccrualWorker) processing(goods []*models.GoodsData, orders []
 		// checking order
 		goodsList := order.Receipt.Goods
 		if goodsList == nil || len(goodsList) == 0 {
-			err = w.store.UpdateOrder(context.TODO(), order.ID, storage.OrderStatusInvalid, 0)
+			err = w.store.UpdateOrder(context.TODO(), order.ID, common.OrderStatusInvalid, money.NewFromFloat(0, common.Currency))
 			if err != nil {
 				logger.Log.Info("error updating order",
 					zap.String("order_num", order.OrderNum), zap.String("error", err.Error()))
@@ -116,7 +118,7 @@ func (w *CalculateAccrualWorker) processing(goods []*models.GoodsData, orders []
 			accrual += ac
 		}
 		if err != nil {
-			err = w.store.UpdateOrder(context.TODO(), order.ID, storage.OrderStatusInvalid, 0)
+			err = w.store.UpdateOrder(context.TODO(), order.ID, common.OrderStatusInvalid, money.NewFromFloat(0, common.Currency))
 			if err != nil {
 				logger.Log.Info("error updating order",
 					zap.String("order_num", order.OrderNum), zap.String("error", err.Error()))
@@ -125,7 +127,7 @@ func (w *CalculateAccrualWorker) processing(goods []*models.GoodsData, orders []
 		}
 
 		// updating order
-		err = w.store.UpdateOrder(context.TODO(), order.ID, storage.OrderStatusProcessed, accrual)
+		err = w.store.UpdateOrder(context.TODO(), order.ID, common.OrderStatusProcessed, money.NewFromFloat(accrual, common.Currency))
 		if err != nil {
 			logger.Log.Info("error updating order",
 				zap.String("order_num", order.OrderNum), zap.String("error", err.Error()))

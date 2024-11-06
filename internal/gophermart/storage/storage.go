@@ -9,12 +9,6 @@ import (
 
 const (
 	InstancePostgresql = "pgsql"
-
-	OrderStatusNew        = "NEW"        // gophermart service
-	OrderStatusRegistered = "REGISTERED" // accrual service
-	OrderStatusProcessing = "PROCESSING"
-	OrderStatusInvalid    = "INVALID"
-	OrderStatusProcessed  = "PROCESSED"
 )
 
 var (
@@ -40,5 +34,5 @@ type Storage interface {
 	GetUserWithdrawals(ctx context.Context, userID int64) (models.WithdrawalsData, error)
 
 	GetOrdersPack(ctx context.Context) ([]*models.OrderRow, error)
-	UpdateOrder(ctx context.Context, userID, id int64, status string, accrual float64) error
+	UpdateOrder(ctx context.Context, userID, id int64, status string, accrual *money.Money) error
 }

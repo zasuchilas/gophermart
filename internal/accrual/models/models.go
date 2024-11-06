@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"github.com/Rhymond/go-money"
+	"time"
+)
 
 type GoodsData struct {
 	Match      string  `json:"match"`
@@ -28,7 +31,7 @@ type AccrualOrder struct {
 	ID         int64
 	OrderNum   string
 	Status     string
-	Accrual    float64
+	Accrual    *money.Money
 	Receipt    *Receipt
 	UploadedAt time.Time
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/zasuchilas/gophermart/internal/accrual/logger"
 	"github.com/zasuchilas/gophermart/internal/accrual/models"
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
+	"github.com/zasuchilas/gophermart/internal/common"
 	"go.uber.org/zap"
 	"time"
 )
@@ -124,9 +125,9 @@ func (d *PgStorage) GetGoods(ctx context.Context) ([]*models.GoodsData, error) {
 
 func (d *PgStorage) GetOrders(ctx context.Context) ([]*models.AccrualOrder, error) {
 	statuses := []string{
-		storage.OrderStatusNew,
-		storage.OrderStatusRegistered,
-		storage.OrderStatusProcessing,
+		common.OrderStatusNew,
+		common.OrderStatusRegistered,
+		common.OrderStatusProcessing,
 	}
 	limit := config.WorkerPackLimit
 
@@ -153,19 +154,21 @@ func (d *PgStorage) GetOrders(ctx context.Context) ([]*models.AccrualOrder, erro
 		orders := make([]*models.AccrualOrder, 0)
 		for rows.Next() {
 			var (
-				gd      models.AccrualOrder
+				ord     models.AccrualOrder
+				accrual int64
 				receipt string
 				rc      models.Receipt
 			)
-			err = rows.Scan(&gd.ID, &gd.OrderNum, &gd.Status, &gd.Accrual, &receipt, &gd.UploadedAt)
+			err = rows.Scan(&ord.ID, &ord.OrderNum, &ord.Status, &accrual, &receipt, &ord.UploadedAt)
 			if err != nil {
 				return nil, err
 			}
 			err = json.Unmarshal([]byte(receipt), &rc)
 			if err == nil {
-				gd.Receipt = &rc
+				ord.Receipt = &rc
 			}
-			orders = append(orders, &gd)
+			ord.Accrual = money.New(accrual, money.RUB)
+			orders = append(orders, &ord)
 		}
 
 		err = rows.Err()
@@ -177,7 +180,7 @@ func (d *PgStorage) GetOrders(ctx context.Context) ([]*models.AccrualOrder, erro
 	}
 }
 
-func (d *PgStorage) UpdateOrder(ctx context.Context, id int64, status string, accrual float64) error {
+func (d *PgStorage) UpdateOrder(ctx context.Context, id int64, status string, accrual *money.Money) error {
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -194,7 +197,7 @@ func (d *PgStorage) UpdateOrder(ctx context.Context, id int64, status string, ac
 		return fmt.Errorf("the operation was canceled")
 	default:
 		_, err = stmt.ExecContext(ctx,
-			status, accrual, id,
+			status, accrual.Amount(), id,
 		)
 		if err != nil {
 			return err

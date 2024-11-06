@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Rhymond/go-money"
+	"github.com/zasuchilas/gophermart/internal/common"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/models"
@@ -135,7 +137,7 @@ func (w *OrderEnrichWorker) workerProc(jobs <-chan *models.OrderRow) {
 		if order.Status == resp.Status {
 			continue
 		}
-		err = w.store.UpdateOrder(context.TODO(), order.UserID, order.ID, resp.Status, resp.Accrual)
+		err = w.store.UpdateOrder(context.TODO(), order.UserID, order.ID, resp.Status, money.NewFromFloat(resp.Accrual, common.Currency))
 		if err != nil {
 			logger.Log.Info("error updating order data in db", zap.String("error", err.Error()))
 			continue

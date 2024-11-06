@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Rhymond/go-money"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/zasuchilas/gophermart/internal/common"
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
 	"github.com/zasuchilas/gophermart/internal/gophermart/models"
@@ -368,9 +369,9 @@ func (d *PgStorage) GetUserWithdrawals(ctx context.Context, userID int64) (model
 
 func (d *PgStorage) GetOrdersPack(ctx context.Context) ([]*models.OrderRow, error) {
 	statuses := []string{
-		storage.OrderStatusNew,
-		storage.OrderStatusRegistered,
-		storage.OrderStatusProcessing,
+		common.OrderStatusNew,
+		common.OrderStatusRegistered,
+		common.OrderStatusProcessing,
 	}
 	limit := config.WorkerPackLimit // TODO: get limit from above
 
@@ -415,7 +416,7 @@ func (d *PgStorage) GetOrdersPack(ctx context.Context) ([]*models.OrderRow, erro
 	}
 }
 
-func (d *PgStorage) UpdateOrder(ctx context.Context, userID, id int64, status string, accrual float64) error {
+func (d *PgStorage) UpdateOrder(ctx context.Context, userID, id int64, status string, accrual *money.Money) error {
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -446,20 +447,20 @@ func (d *PgStorage) UpdateOrder(ctx context.Context, userID, id int64, status st
 		return fmt.Errorf("the operation was canceled")
 	default:
 		_, err = orderStmt.ExecContext(ctx,
-			status, accrual, id,
+			status, accrual.Amount(), id,
 		)
 		if err != nil {
 			return err
 		}
 	}
 
-	if status == storage.OrderStatusProcessed {
+	if status == common.OrderStatusProcessed {
 		select {
 		case <-ctxTm.Done():
 			return fmt.Errorf("the operation was canceled")
 		default:
 			_, err = balanceStmt.ExecContext(ctx,
-				accrual, userID,
+				accrual.Amount(), userID,
 			)
 			if err != nil {
 				return err

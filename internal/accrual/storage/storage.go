@@ -2,17 +2,12 @@ package storage
 
 import (
 	"context"
+	"github.com/Rhymond/go-money"
 	"github.com/zasuchilas/gophermart/internal/accrual/models"
 )
 
 const (
 	InstancePostgresql = "pgsql"
-
-	OrderStatusNew        = "NEW"        // gophermart service
-	OrderStatusRegistered = "REGISTERED" // accrual service
-	OrderStatusProcessing = "PROCESSING"
-	OrderStatusInvalid    = "INVALID"
-	OrderStatusProcessed  = "PROCESSED"
 )
 
 type Storage interface {
@@ -25,5 +20,5 @@ type Storage interface {
 
 	GetGoods(ctx context.Context) ([]*models.GoodsData, error)
 	GetOrders(ctx context.Context) ([]*models.AccrualOrder, error)
-	UpdateOrder(ctx context.Context, id int64, status string, accrual float64) error
+	UpdateOrder(ctx context.Context, id int64, status string, accrual *money.Money) error
 }
