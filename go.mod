@@ -3,6 +3,7 @@ module github.com/zasuchilas/gophermart
 go 1.22.1
 
 require (
+	github.com/Rhymond/go-money v1.0.14
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-chi/jwtauth/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.7.1
@@ -12,7 +13,6 @@ require (
 )
 
 require (
-	github.com/Rhymond/go-money v1.0.14 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
