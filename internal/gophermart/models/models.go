@@ -42,3 +42,18 @@ type Withdrawal struct {
 	Sum         float64 `json:"sum"`
 	ProcessedAt string  `json:"processed_at"`
 }
+
+type OrderRow struct {
+	ID         int64
+	OrderNum   int
+	Status     string
+	Accrual    float64
+	UserID     int64
+	UploadedAt string
+}
+
+type OrderStateResponse struct {
+	OrderNum int     `json:"number"`
+	Status   string  `json:"status"`
+	Accrual  float64 `json:"accrual"`
+}

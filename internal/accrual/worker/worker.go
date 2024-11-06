@@ -9,20 +9,23 @@ import (
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
 	"go.uber.org/zap"
 	"strings"
+	"sync"
 	"time"
 )
 
 type CalculateAccrualWorker struct {
-	store  storage.Storage
-	timer  *time.Timer
-	doneCh chan struct{}
+	waitGroup *sync.WaitGroup
+	store     storage.Storage
+	timer     *time.Timer
+	doneCh    chan struct{}
 }
 
-func New(store storage.Storage) *CalculateAccrualWorker {
+func New(store storage.Storage, wg *sync.WaitGroup) *CalculateAccrualWorker {
 	wr := CalculateAccrualWorker{
-		store:  store,
-		timer:  time.NewTimer(config.WorkerPeriod),
-		doneCh: make(chan struct{}),
+		store:     store,
+		timer:     time.NewTimer(config.WorkerPeriod),
+		doneCh:    make(chan struct{}),
+		waitGroup: wg,
 	}
 	return &wr
 }
@@ -77,6 +80,7 @@ loop:
 func (w *CalculateAccrualWorker) Stop() {
 	w.timer.Stop()
 	w.doneCh <- struct{}{}
+	w.waitGroup.Done()
 }
 
 func (w *CalculateAccrualWorker) resetTimer() {

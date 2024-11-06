@@ -9,17 +9,19 @@ import (
 	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"go.uber.org/zap"
 	"net/http"
+	"sync"
 )
 
 type ChiServer struct {
-	store storage.Storage
+	store     storage.Storage
+	waitGroup *sync.WaitGroup
 }
 
-func New(s storage.Storage) *ChiServer {
+func New(s storage.Storage, wg *sync.WaitGroup) *ChiServer {
 	srv := &ChiServer{
-		store: s,
+		store:     s,
+		waitGroup: wg,
 	}
-
 	return srv
 }
 
@@ -30,6 +32,7 @@ func (s *ChiServer) Start() {
 
 func (s *ChiServer) Stop() {
 	// TODO: requests cancelling
+	s.waitGroup.Done()
 }
 
 func (s *ChiServer) router() chi.Router {

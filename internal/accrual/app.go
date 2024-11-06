@@ -40,12 +40,13 @@ func (a *App) Run() {
 	logger.ServiceInfo("ACCRUAL.GOPHERMART (... service)", a.AppVersion)
 	a.store = pgstorage.New()
 
-	a.server = chisrv.New(a.store)
+	a.server = chisrv.New(a.store, a.waitGroup)
 	a.waitGroup.Add(1)
 	go a.server.Start()
 
-	a.worker = worker.New(a.store)
-	a.worker.Start()
+	a.worker = worker.New(a.store, a.waitGroup)
+	a.waitGroup.Add(1)
+	go a.worker.Start()
 
 	a.shutdown()
 	a.waitGroup.Wait()
@@ -61,10 +62,9 @@ func (a *App) shutdown() {
 		close(sigChan)
 
 		a.worker.Stop()
-		a.store.Stop()
 		a.server.Stop()
+		a.store.Stop()
 
 		logger.Log.Info("ACCRUAL.GOPHERMART service stopped")
-		a.waitGroup.Done()
 	}()
 }

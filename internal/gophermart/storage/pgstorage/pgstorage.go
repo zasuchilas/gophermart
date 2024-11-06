@@ -365,3 +365,112 @@ func (d *PgStorage) GetUserWithdrawals(ctx context.Context, userID int64) (model
 		return withdrawals, nil
 	}
 }
+
+func (d *PgStorage) GetOrdersPack(ctx context.Context) ([]*models.OrderRow, error) {
+	statuses := []string{
+		storage.OrderStatusNew,
+		storage.OrderStatusRegistered,
+		storage.OrderStatusProcessing,
+	}
+	limit := config.WorkerPackLimit // TODO: get limit from above
+
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	stmt, err := d.db.PrepareContext(ctxTm,
+		`SELECT id, order_num, status, accrual, user_id, uploaded_at FROM gophermart.orders WHERE status = any($1) LIMIT $2`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return nil, fmt.Errorf("the operation was canceled")
+	default:
+		rows, er := stmt.QueryContext(ctxTm, statuses, limit)
+		if er != nil {
+			return nil, er
+		}
+		defer rows.Close()
+
+		orders := make([]*models.OrderRow, 0)
+		for rows.Next() {
+			var (
+				gd models.OrderRow
+			)
+			err = rows.Scan(&gd.ID, &gd.OrderNum, &gd.Status, &gd.Accrual, &gd.UserID, &gd.UploadedAt)
+			if err != nil {
+				return nil, err
+			}
+			orders = append(orders, &gd)
+		}
+
+		err = rows.Err()
+		if err != nil {
+			return nil, err
+		}
+
+		return orders, nil
+	}
+}
+
+func (d *PgStorage) UpdateOrder(ctx context.Context, userID, id int64, status string, accrual float64) error {
+	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	tx, err := d.db.BeginTx(ctxTm, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	orderStmt, err := tx.PrepareContext(ctxTm,
+		"UPDATE gophermart.orders SET status = $1, accrual = $2 WHERE id = $3;")
+	if err != nil {
+		logger.Log.Info("preparing order stmt", zap.String("error", err.Error()))
+		return err
+	}
+	defer orderStmt.Close()
+
+	balanceStmt, err := tx.PrepareContext(ctxTm,
+		"UPDATE gophermart.users SET balance = balance + $1 WHERE id = $2;")
+	if err != nil {
+		logger.Log.Info("preparing balance stmt", zap.String("error", err.Error()))
+		return err
+	}
+	defer balanceStmt.Close()
+
+	select {
+	case <-ctxTm.Done():
+		return fmt.Errorf("the operation was canceled")
+	default:
+		_, err = orderStmt.ExecContext(ctx,
+			status, accrual, id,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	if status == storage.OrderStatusProcessed {
+		select {
+		case <-ctxTm.Done():
+			return fmt.Errorf("the operation was canceled")
+		default:
+			_, err = balanceStmt.ExecContext(ctx,
+				accrual, userID,
+			)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

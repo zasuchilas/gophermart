@@ -3,6 +3,7 @@ package config
 import (
 	"flag"
 	"github.com/zasuchilas/gophermart/pkg/envflags"
+	"time"
 )
 
 var (
@@ -12,6 +13,9 @@ var (
 	LogLevel             string
 	EnvType              string
 	SecretKey            string
+	WorkerPeriod         time.Duration
+	WorkerPackLimit      int
+	WorkerPoolSize       int
 )
 
 func ParseFlags() {
@@ -21,6 +25,9 @@ func ParseFlags() {
 	flag.StringVar(&LogLevel, "l", "info", "logging level")
 	flag.StringVar(&EnvType, "e", "production", "type of environment (production or develop)")
 	flag.StringVar(&SecretKey, "k", "supersecretkey", "the secret key for user tokens")
+	flag.DurationVar(&WorkerPeriod, "w", 10*time.Second, "worker period of order enriching worker")
+	flag.IntVar(&WorkerPackLimit, "p", 10, "pack limit of order enriching worker")
+	flag.IntVar(&WorkerPoolSize, "z", 3, "pool size of order enriching worker")
 	flag.Parse()
 
 	envflags.TryUseEnvString(&RunAddress, "RUN_ADDRESS")
@@ -29,4 +36,7 @@ func ParseFlags() {
 	envflags.TryUseEnvString(&LogLevel, "LOG_LEVEL")
 	envflags.TryUseEnvString(&EnvType, "ENV_TYPE")
 	envflags.TryUseEnvString(&SecretKey, "SECRET_KEY")
+	envflags.TryUseEnvDuration(&WorkerPeriod, "WORKER_PERIOD")
+	envflags.TryUseEnvInt(&WorkerPackLimit, "WORKER_PACK_LIMIT")
+	envflags.TryUseEnvInt(&WorkerPoolSize, "WORKER_POOL_SIZE")
 }
