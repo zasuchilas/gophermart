@@ -98,7 +98,7 @@ func (w *CalculateAccrualWorker) processing(goods []*models.GoodsData, orders []
 
 		// checking order
 		goodsList := order.Receipt.Goods
-		if goodsList == nil || len(goodsList) == 0 {
+		if len(goodsList) == 0 {
 			err = w.store.UpdateOrder(context.TODO(), order.ID, common.OrderStatusInvalid, money.NewFromFloat(0, common.Currency))
 			if err != nil {
 				logger.Log.Info("error updating order",
