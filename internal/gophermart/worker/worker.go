@@ -11,6 +11,7 @@ import (
 	"github.com/zasuchilas/gophermart/internal/gophermart/models"
 	"github.com/zasuchilas/gophermart/internal/gophermart/storage"
 	"go.uber.org/zap"
+	"io"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -124,14 +125,22 @@ func (w *OrderEnrichWorker) workerProc(jobs <-chan *models.OrderRow) {
 			w.throttlePause()
 			continue
 		}
+		if response.StatusCode == http.StatusNoContent {
+			continue
+		}
 
 		// decoding response
-		var resp models.OrderStateResponse
-		dec := json.NewDecoder(response.Body)
-		err = dec.Decode(&resp)
+		body, err := io.ReadAll(response.Body)
 		response.Body.Close()
 		if err != nil {
-			logger.Log.Info("cannot decode response JSON body", zap.String("error", err.Error()))
+			logger.Log.Info("cannot read response body", zap.String("error", err.Error()))
+			continue
+		}
+		var resp models.OrderStateResponse
+		err = json.Unmarshal(body, &resp)
+		if err != nil {
+			logger.Log.Info("cannot decode response JSON body",
+				zap.String("error", err.Error()), zap.Int("order_num", order.OrderNum))
 			continue // ??
 		}
 
