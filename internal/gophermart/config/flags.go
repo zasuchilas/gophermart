@@ -19,7 +19,7 @@ var (
 )
 
 func ParseFlags() {
-	flag.StringVar(&RunAddress, "a", "localhost:8079", "address and port to run server")
+	flag.StringVar(&RunAddress, "a", "localhost:8080", "address and port to run server")
 	flag.StringVar(&DatabaseURI, "d", "", "database connection string")
 	flag.StringVar(&AccrualSystemAddress, "r", "localhost:8081", "address of the accrual calculation service")
 	flag.StringVar(&LogLevel, "l", "info", "logging level")
