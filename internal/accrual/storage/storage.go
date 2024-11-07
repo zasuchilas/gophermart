@@ -15,8 +15,8 @@ type Storage interface {
 	InstanceName() string
 
 	RegisterNewGoods(ctx context.Context, match, rewardType string, reward float64) (int64, error)
-	RegisterNewOrder(ctx context.Context, orderNum int, receipt string) (int64, error)
-	GetOrderData(ctx context.Context, orderNum int) (*models.OrderData, error)
+	RegisterNewOrder(ctx context.Context, orderNum string, receipt string) (int64, error)
+	GetOrderData(ctx context.Context, orderNum string) (*models.OrderData, error)
 
 	GetGoods(ctx context.Context) ([]*models.GoodsData, error)
 	GetOrders(ctx context.Context) ([]*models.AccrualOrder, error)

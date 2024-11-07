@@ -21,13 +21,8 @@ func (s *ChiServer) home(w http.ResponseWriter, _ *http.Request) {
 
 func (s *ChiServer) getOrderAccrual(w http.ResponseWriter, r *http.Request) {
 
-	number := chi.URLParam(r, "orderNum")
-	if number == "" {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-	orderNum, err := strconv.Atoi(number)
-	if err != nil {
+	orderNum := chi.URLParam(r, "orderNum")
+	if orderNum == "" {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -35,7 +30,12 @@ func (s *ChiServer) getOrderAccrual(w http.ResponseWriter, r *http.Request) {
 	// luna validation
 	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
 	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
-	if ok := luhn.Valid(orderNum); !ok {
+	number, err := strconv.Atoi(orderNum)
+	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if ok := luhn.Valid(number); !ok {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -79,19 +79,21 @@ func (s *ChiServer) registerOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// validation
-	if req.Order == "" {
+	orderNum := req.Order
+	if orderNum == "" {
 		http.Error(w, "the order number is required", http.StatusBadRequest)
 		return
 	}
-	orderNum, err := strconv.Atoi(req.Order)
+
+	// luna validation
+	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
+	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
+	number, err := strconv.Atoi(orderNum)
 	if err != nil {
 		http.Error(w, "the order number must be a number", http.StatusBadRequest)
 		return
 	}
-	// luna validation
-	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
-	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
-	if ok := luhn.Valid(orderNum); !ok {
+	if ok := luhn.Valid(number); !ok {
 		http.Error(w, "luna validation failed", http.StatusBadRequest)
 		return
 	}

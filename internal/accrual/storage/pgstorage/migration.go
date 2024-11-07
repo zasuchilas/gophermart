@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"github.com/zasuchilas/gophermart/internal/accrual/logger"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func createTablesIfNeed(db *sql.DB) {
 
 		CREATE TABLE IF NOT EXISTS accrual.orders (
 			id SERIAL PRIMARY KEY,
-			order_num INT8 NOT NULL UNIQUE,
+			order_num VARCHAR(254) NOT NULL UNIQUE,
 			status VARCHAR(25) NOT NULL DEFAULT 'REGISTERED',
 			accrual INTEGER NOT NULL DEFAULT 0,
 		  receipt TEXT NOT NULL DEFAULT '',
@@ -39,6 +40,6 @@ func createTablesIfNeed(db *sql.DB) {
 
 	_, err := db.ExecContext(ctx, q)
 	if err != nil {
-		logger.Log.Fatal("creating postgresql tables")
+		logger.Log.Error("creating postgresql tables", zap.String("error", err.Error()))
 	}
 }

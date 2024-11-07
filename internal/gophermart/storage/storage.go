@@ -27,10 +27,10 @@ type Storage interface {
 
 	Register(ctx context.Context, login, passHash string) (int64, error)
 	GetLoginData(ctx context.Context, login, password string) (*models.LoginData, error)
-	RegisterOrder(ctx context.Context, userID int64, orderNum int) error
+	RegisterOrder(ctx context.Context, userID int64, orderNum string) error
 	GetUserOrders(ctx context.Context, userID int64) (models.OrderData, error)
 	GetUserBalance(ctx context.Context, userID int64) (*models.UserBalance, error)
-	WithdrawTransaction(ctx context.Context, userID int64, orderNum int, sum *money.Money) error
+	WithdrawTransaction(ctx context.Context, userID int64, orderNum string, sum *money.Money) error
 	GetUserWithdrawals(ctx context.Context, userID int64) (models.WithdrawalsData, error)
 
 	GetOrdersPack(ctx context.Context) ([]*models.OrderRow, error)

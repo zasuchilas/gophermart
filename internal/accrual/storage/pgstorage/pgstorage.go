@@ -59,7 +59,7 @@ func (d *PgStorage) RegisterNewGoods(ctx context.Context, match, rewardType stri
 	return id, err
 }
 
-func (d *PgStorage) RegisterNewOrder(ctx context.Context, orderNum int, receipt string) (int64, error) {
+func (d *PgStorage) RegisterNewOrder(ctx context.Context, orderNum string, receipt string) (int64, error) {
 	var id int64
 	err := d.db.QueryRowContext(
 		ctx,
@@ -69,7 +69,7 @@ func (d *PgStorage) RegisterNewOrder(ctx context.Context, orderNum int, receipt 
 	return id, err
 }
 
-func (d *PgStorage) GetOrderData(ctx context.Context, orderNum int) (*models.OrderData, error) {
+func (d *PgStorage) GetOrderData(ctx context.Context, orderNum string) (*models.OrderData, error) {
 	var (
 		v       models.OrderData
 		accrual int64

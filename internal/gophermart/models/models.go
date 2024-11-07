@@ -19,7 +19,7 @@ type LoginData struct {
 type OrderData []*Order
 
 type Order struct {
-	OrderNum   int     `json:"number"`
+	OrderNum   string  `json:"number"`
 	Status     string  `json:"status"`
 	Accrual    float64 `json:"accrual"`
 	UploadedAt string  `json:"uploaded_at"`
@@ -45,7 +45,7 @@ type Withdrawal struct {
 
 type OrderRow struct {
 	ID         int64
-	OrderNum   int
+	OrderNum   string
 	Status     string
 	Accrual    float64
 	UserID     int64
@@ -53,7 +53,7 @@ type OrderRow struct {
 }
 
 type OrderStateResponse struct {
-	OrderNum int     `json:"number"`
+	OrderNum string  `json:"number"`
 	Status   string  `json:"status"`
 	Accrual  float64 `json:"accrual"`
 }

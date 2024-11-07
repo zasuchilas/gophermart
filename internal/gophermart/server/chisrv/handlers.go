@@ -137,22 +137,23 @@ func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	number, err := strconv.Atoi(string(body))
-	if err != nil {
-		http.Error(w, "the order number must be a number", http.StatusBadRequest)
-		return
-	}
+	orderNum := string(body)
 
 	// luna validation
 	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
 	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
+	number, err := strconv.Atoi(string(orderNum))
+	if err != nil {
+		http.Error(w, "the order number must be a number string", http.StatusBadRequest)
+		return
+	}
 	if ok := luhn.Valid(number); !ok {
 		http.Error(w, "luna validation failed", http.StatusUnprocessableEntity)
 		return
 	}
 
 	// writing into db
-	err = s.store.RegisterOrder(r.Context(), userID, number)
+	err = s.store.RegisterOrder(r.Context(), userID, orderNum)
 	if err != nil {
 		if errors.Is(err, storage.ErrNumberDone) {
 			w.WriteHeader(http.StatusOK)
@@ -165,9 +166,6 @@ func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// adding an order number to processing
-	// TODO:
 
 	w.WriteHeader(http.StatusAccepted)
 }
@@ -246,12 +244,13 @@ func (s *ChiServer) withdrawFromBalance(w http.ResponseWriter, r *http.Request) 
 	// luna validation
 	// https://ru.wikipedia.org/wiki/Алгоритм_Луна
 	// https://goodcalculators.com/luhn-algorithm-calculator/?Num=18
-	orderNum, err := strconv.Atoi(req.Order)
+	orderNum := req.Order
+	number, err := strconv.Atoi(orderNum)
 	if err != nil {
-		http.Error(w, "the order number must be a number", http.StatusUnprocessableEntity)
+		http.Error(w, "the order number must be a number string", http.StatusUnprocessableEntity)
 		return
 	}
-	if ok := luhn.Valid(orderNum); !ok {
+	if ok := luhn.Valid(number); !ok {
 		http.Error(w, "luna validation failed", http.StatusUnprocessableEntity)
 		return
 	}

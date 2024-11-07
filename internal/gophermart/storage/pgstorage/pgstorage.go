@@ -67,7 +67,7 @@ func (d *PgStorage) GetLoginData(ctx context.Context, login, password string) (*
 	return &v, err
 }
 
-func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum int) error {
+func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum string) error {
 
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -213,7 +213,7 @@ func (d *PgStorage) GetUserBalance(ctx context.Context, userID int64) (*models.U
 	}
 }
 
-func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, orderNum int, sum *money.Money) error {
+func (d *PgStorage) WithdrawTransaction(ctx context.Context, userID int64, orderNum string, sum *money.Money) error {
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 

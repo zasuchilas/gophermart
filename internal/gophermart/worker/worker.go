@@ -115,7 +115,7 @@ func (w *OrderEnrichWorker) workerProc(jobs <-chan *models.OrderRow) {
 		}
 		// do request
 		// GET /api/orders/{number}
-		u := fmt.Sprintf("http://%s/api/orders/%d", config.AccrualSystemAddress, order.OrderNum)
+		u := fmt.Sprintf("http://%s/api/orders/%s", config.AccrualSystemAddress, order.OrderNum)
 		response, err := http.Get(u)
 		if err != nil {
 			logger.Log.Info("getting error during request", zap.String("error", err.Error()))
@@ -140,7 +140,7 @@ func (w *OrderEnrichWorker) workerProc(jobs <-chan *models.OrderRow) {
 		err = json.Unmarshal(body, &resp)
 		if err != nil {
 			logger.Log.Info("cannot decode response JSON body",
-				zap.String("error", err.Error()), zap.Int("order_num", order.OrderNum))
+				zap.String("error", err.Error()), zap.String("order_num", order.OrderNum))
 			continue // ??
 		}
 
