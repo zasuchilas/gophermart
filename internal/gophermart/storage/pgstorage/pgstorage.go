@@ -130,7 +130,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum st
 	return nil
 }
 
-func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.OrderData, error) {
+func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) ([]*models.Order, error) {
 
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -152,7 +152,7 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 		}
 		defer rows.Close()
 
-		orders := make(models.OrderData, 0)
+		orders := make([]*models.Order, 0)
 		for rows.Next() {
 			var (
 				v          models.Order

@@ -16,8 +16,6 @@ type LoginData struct {
 	PasswordHash string
 }
 
-type OrderData []*Order
-
 type Order struct {
 	OrderNum   string  `json:"number"`
 	Status     string  `json:"status"`
