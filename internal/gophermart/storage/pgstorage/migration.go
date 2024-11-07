@@ -11,7 +11,7 @@ import (
 // TODO: goose
 
 func createTablesIfNeed(db *sql.DB) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	q := `
