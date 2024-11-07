@@ -1,8 +1,9 @@
 package main
 
-import "github.com/zasuchilas/gophermart/internal/gophermart"
+import "log"
 
 func main() {
-	a := gophermart.New()
-	a.Run()
+	log.Println("HELLO GOPHERMART!")
+	//a := gophermart.New()
+	//a.Run()
 }
