@@ -37,7 +37,7 @@ func createTablesIfNeed(db *sql.DB) {
 		  user_id INT8 REFERENCES users (id),
 			uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 		);
-		CREATE INDEX IF NOT EXISTS idx_status ON gophermart.orders (status);
+		CREATE INDEX IF NOT EXISTS idx_status ON gophermart.user_orders (status);
 
 		CREATE TABLE IF NOT EXISTS gophermart.withdrawals (
 		  id SERIAL PRIMARY KEY,

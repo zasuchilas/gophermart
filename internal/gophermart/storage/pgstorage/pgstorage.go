@@ -32,7 +32,7 @@ func New() *PgStorage {
 	}
 
 	logger.Log.Debug("creating db tables if need")
-	//createTablesIfNeed(db) // TODO: goose
+	createTablesIfNeed(db) // TODO: goose
 
 	return &PgStorage{
 		db: db,
@@ -79,7 +79,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum in
 	defer tx.Rollback()
 
 	stmt1, err := tx.PrepareContext(ctxTm,
-		"SELECT user_id FROM gophermart.orders WHERE order_num = $1;")
+		"SELECT user_id FROM gophermart.user_orders WHERE order_num = $1;")
 	if err != nil {
 		logger.Log.Error("preparing select stmt", zap.Error(err))
 		return err
@@ -87,7 +87,7 @@ func (d *PgStorage) RegisterOrder(ctx context.Context, userID int64, orderNum in
 	defer stmt1.Close()
 
 	stmt2, err := tx.PrepareContext(ctxTm,
-		"INSERT INTO gophermart.orders (order_num, user_id) VALUES ($1, $2);")
+		"INSERT INTO gophermart.user_orders (order_num, user_id) VALUES ($1, $2);")
 	if err != nil {
 		logger.Log.Error("preparing insert stmt", zap.Error(err))
 		return err
