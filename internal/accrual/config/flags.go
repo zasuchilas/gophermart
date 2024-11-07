@@ -20,8 +20,8 @@ func ParseFlags() {
 	flag.StringVar(&DatabaseURI, "d", "", "database connection string")
 	flag.StringVar(&LogLevel, "l", "info", "logging level")
 	flag.StringVar(&EnvType, "e", "production", "type of environment (production or develop)")
-	flag.DurationVar(&WorkerPeriod, "w", 10*time.Second, "calculate accrual worker period")
-	flag.IntVar(&WorkerPackLimit, "p", 10, "calculate accrual worker pack limit")
+	flag.DurationVar(&WorkerPeriod, "w", 3*time.Second, "calculate accrual worker period")
+	flag.IntVar(&WorkerPackLimit, "p", 25, "calculate accrual worker pack limit")
 	flag.Parse()
 
 	envflags.TryUseEnvString(&RunAddress, "RUN_ADDRESS")

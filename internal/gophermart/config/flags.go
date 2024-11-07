@@ -25,8 +25,8 @@ func ParseFlags() {
 	flag.StringVar(&LogLevel, "l", "info", "logging level")
 	flag.StringVar(&EnvType, "e", "production", "type of environment (production or develop)")
 	flag.StringVar(&SecretKey, "k", "supersecretkey", "the secret key for user tokens")
-	flag.DurationVar(&WorkerPeriod, "w", 10*time.Second, "worker period of order enriching worker")
-	flag.IntVar(&WorkerPackLimit, "p", 10, "pack limit of order enriching worker")
+	flag.DurationVar(&WorkerPeriod, "w", 3*time.Second, "worker period of order enriching worker")
+	flag.IntVar(&WorkerPackLimit, "p", 25, "pack limit of order enriching worker")
 	flag.IntVar(&WorkerPoolSize, "z", 3, "pool size of order enriching worker")
 	flag.Parse()
 

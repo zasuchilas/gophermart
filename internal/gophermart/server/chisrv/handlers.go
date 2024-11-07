@@ -192,7 +192,7 @@ func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
-	if err = enc.Encode(&orders); err != nil {
+	if err = enc.Encode(orders); err != nil {
 		logger.Log.Info("error encoding response", zap.String("error", err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
