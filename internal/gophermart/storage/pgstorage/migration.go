@@ -29,7 +29,7 @@ func createTablesIfNeed(db *sql.DB) {
 		CREATE INDEX IF NOT EXISTS idx_login ON gophermart.users (login);
 		CREATE INDEX IF NOT EXISTS idx_deleted ON gophermart.users (deleted);
 
-		CREATE TABLE IF NOT EXISTS gophermart.orders (
+		CREATE TABLE IF NOT EXISTS gophermart.user_orders (
 			id SERIAL PRIMARY KEY,
 			order_num INT8 NOT NULL UNIQUE,
 			status VARCHAR(25) NOT NULL DEFAULT 'NEW',

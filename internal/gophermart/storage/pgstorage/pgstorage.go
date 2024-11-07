@@ -136,7 +136,7 @@ func (d *PgStorage) GetUserOrders(ctx context.Context, userID int64) (models.Ord
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT order_num, status, accrual, uploaded_at FROM gophermart.orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
+		`SELECT order_num, status, accrual, uploaded_at FROM gophermart.user_orders WHERE user_id = $1 ORDER BY uploaded_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +379,7 @@ func (d *PgStorage) GetOrdersPack(ctx context.Context) ([]*models.OrderRow, erro
 	defer cancel()
 
 	stmt, err := d.db.PrepareContext(ctxTm,
-		`SELECT id, order_num, status, accrual, user_id, uploaded_at FROM gophermart.orders WHERE status = any($1) LIMIT $2`)
+		`SELECT id, order_num, status, accrual, user_id, uploaded_at FROM gophermart.user_orders WHERE status = any($1) LIMIT $2`)
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +427,7 @@ func (d *PgStorage) UpdateOrder(ctx context.Context, userID, id int64, status st
 	defer tx.Rollback()
 
 	orderStmt, err := tx.PrepareContext(ctxTm,
-		"UPDATE gophermart.orders SET status = $1, accrual = $2 WHERE id = $3;")
+		"UPDATE gophermart.user_orders SET status = $1, accrual = $2 WHERE id = $3;")
 	if err != nil {
 		logger.Log.Info("preparing order stmt", zap.String("error", err.Error()))
 		return err
