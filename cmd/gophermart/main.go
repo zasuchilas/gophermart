@@ -3,8 +3,6 @@ package main
 import (
 	"github.com/zasuchilas/gophermart/internal/gophermart/config"
 	"github.com/zasuchilas/gophermart/internal/gophermart/logger"
-	"github.com/zasuchilas/gophermart/internal/gophermart/server/chisrv"
-	"github.com/zasuchilas/gophermart/internal/gophermart/storage/pgstorage"
 	"io"
 	"log"
 	"net/http"
@@ -17,11 +15,11 @@ func main() {
 	logger.Init()
 	logger.ServiceInfo("GOPHERMART (... service)", "TEST VERSION")
 
-	store := pgstorage.New()
-	log.Println("STORE", store.InstanceName())
-
-	chisrv.InitJWT()
-	log.Println("INIT JWT OK!")
+	//store := pgstorage.New()
+	//log.Println("STORE", store.InstanceName())
+	//
+	//chisrv.InitJWT()
+	//log.Println("INIT JWT OK!")
 
 	log.Println("HELLO GOPHERMART!")
 	helloHandler := func(w http.ResponseWriter, req *http.Request) {
