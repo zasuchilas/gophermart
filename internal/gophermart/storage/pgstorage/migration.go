@@ -34,14 +34,14 @@ func createTablesIfNeed(db *sql.DB) {
 			order_num INT8 NOT NULL UNIQUE,
 			status VARCHAR(25) NOT NULL DEFAULT 'NEW',
 			accrual INTEGER NOT NULL DEFAULT 0,
-		  user_id INT8 REFERENCES users (id),
+		  user_id INT8 REFERENCES gophermart.users (id),
 			uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 		);
 		CREATE INDEX IF NOT EXISTS idx_status ON gophermart.user_orders (status);
 
 		CREATE TABLE IF NOT EXISTS gophermart.withdrawals (
 		  id SERIAL PRIMARY KEY,
-		  user_id INT8 REFERENCES users (id),
+		  user_id INT8 REFERENCES gophermart.users (id),
 		  order_num INT8 NOT NULL, -- not related to table orders
 		  amount INT NOT NULL DEFAULT 0,
 		  processed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
