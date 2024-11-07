@@ -32,7 +32,7 @@ func New() *PgStorage {
 	}
 
 	logger.Log.Debug("creating db tables if need")
-	createTablesIfNeed(db) // TODO: goose
+	//createTablesIfNeed(db) // TODO: goose
 
 	return &PgStorage{
 		db: db,
