@@ -51,6 +51,6 @@ func createTablesIfNeed(db *sql.DB) {
 
 	_, err := db.ExecContext(ctx, q)
 	if err != nil {
-		logger.Log.Fatal("creating postgresql tables", zap.String("error", err.Error()))
+		logger.Log.Error("creating postgresql tables", zap.String("error", err.Error()))
 	}
 }
