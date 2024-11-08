@@ -165,7 +165,7 @@ loop:
 
 func calculateAccrual(rewardType string, reward float64, price float64) (accrual float64, err error) {
 	if rewardType == "%" {
-		return price / 100 * reward, nil
+		return money.NewFromFloat(price/100*reward, money.RUB).AsMajorUnits(), nil
 	}
 	if rewardType == "pt" {
 		return reward, nil
