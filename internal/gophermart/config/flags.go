@@ -22,7 +22,7 @@ func ParseFlags() {
 	flag.StringVar(&RunAddress, "a", "localhost:8080", "address and port to run server")
 	flag.StringVar(&DatabaseURI, "d", "", "database connection string")
 	flag.StringVar(&AccrualSystemAddress, "r", "localhost:8081", "address of the accrual calculation service")
-	flag.StringVar(&LogLevel, "l", "info", "logging level")
+	flag.StringVar(&LogLevel, "l", "debug", "logging level")
 	flag.StringVar(&EnvType, "e", "production", "type of environment (production or develop)")
 	flag.StringVar(&SecretKey, "k", "supersecretkey", "the secret key for user tokens")
 	flag.DurationVar(&WorkerPeriod, "w", 3*time.Second, "worker period of order enriching worker")

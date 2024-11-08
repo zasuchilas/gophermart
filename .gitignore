@@ -26,5 +26,5 @@ vendor/
 
 .pginit
 .pgdata
-docker-compose.yml
+docker-compose*.yml
 .env*

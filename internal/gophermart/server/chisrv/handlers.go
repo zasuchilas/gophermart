@@ -171,12 +171,15 @@ func (s *ChiServer) loadNewOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
+	logger.Log.Debug("getUserOrders starting")
 
 	userID, err := getUserID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+
+	logger.Log.Debug("userID received", zap.Int64("userID", userID))
 
 	// reading from db
 	orders, err := s.store.GetUserOrders(r.Context(), userID)
@@ -190,6 +193,8 @@ func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Log.Debug("orders received from pg", zap.Any("orders", orders))
+
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	if err = enc.Encode(orders); err != nil {
@@ -197,6 +202,8 @@ func (s *ChiServer) getUserOrders(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	logger.Log.Debug("handler finished the job")
 }
 
 func (s *ChiServer) getUserBalance(w http.ResponseWriter, r *http.Request) {
