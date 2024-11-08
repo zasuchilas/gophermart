@@ -10,6 +10,7 @@ import (
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
 	"github.com/zasuchilas/gophermart/internal/common"
 	"go.uber.org/zap"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -164,12 +165,16 @@ loop:
 }
 
 func calculateAccrual(rewardType string, reward float64, price float64) (accrual float64, err error) {
-	logger.Log.Debug("start", zap.Float64("reward", reward), zap.Float64("accrual_rez", accrual))
+	logger.Log.Debug("start", zap.Float64("reward", reward), zap.Float64("price", price))
 	if rewardType == "%" {
-		p1 := money.NewFromFloat(price/100, money.RUB).AsMajorUnits()
-		r := p1 * reward
-		logger.Log.Debug("start", zap.Float64("reward", reward), zap.Float64("accrual_rez", r))
-		return r, nil
+		//price := 14599.50
+		//percent := 5
+		//reward := price / 100 * (float64)(percent)
+		//fmt.Println(math.Round(reward*100) / 100)
+		rew := price / 100 * reward
+		rez := math.Round(rew*100) / 100
+		logger.Log.Debug("end", zap.Float64("accrual_rez", rez))
+		return rez, nil
 	}
 	if rewardType == "pt" {
 		return reward, nil
