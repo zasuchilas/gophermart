@@ -10,6 +10,7 @@ import (
 	"github.com/zasuchilas/gophermart/internal/accrual/storage"
 	"github.com/zasuchilas/gophermart/internal/common"
 	"go.uber.org/zap"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -165,9 +166,7 @@ loop:
 
 func calculateAccrual(rewardType string, reward float64, price float64) (accrual float64, err error) {
 	if rewardType == "%" {
-		p32 := float32(price)
-		r32 := p32 / 100 * float32(reward)
-		return float64(r32), nil
+		return math.Floor(price/100) * reward, nil
 	}
 	if rewardType == "pt" {
 		return reward, nil
