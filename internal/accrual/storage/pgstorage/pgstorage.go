@@ -184,6 +184,9 @@ func (d *PgStorage) UpdateOrder(ctx context.Context, id int64, status string, ac
 	ctxTm, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
+	accrualAmount := accrual.Amount()
+	logger.Log.Debug("updating accrual", zap.Int64("accrual_amount", accrualAmount))
+
 	stmt, err := d.db.PrepareContext(ctxTm,
 		"UPDATE accrual.orders SET status = $1, accrual = $2 WHERE id = $3;")
 	if err != nil {
@@ -197,7 +200,7 @@ func (d *PgStorage) UpdateOrder(ctx context.Context, id int64, status string, ac
 		return fmt.Errorf("the operation was canceled")
 	default:
 		_, err = stmt.ExecContext(ctx,
-			status, accrual.Amount(), id,
+			status, accrualAmount, id,
 		)
 		if err != nil {
 			return err

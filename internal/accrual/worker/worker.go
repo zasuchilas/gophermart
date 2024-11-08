@@ -164,9 +164,12 @@ loop:
 }
 
 func calculateAccrual(rewardType string, reward float64, price float64) (accrual float64, err error) {
+	logger.Log.Debug("start", zap.Float64("reward", reward), zap.Float64("accrual_rez", accrual))
 	if rewardType == "%" {
 		p1 := money.NewFromFloat(price/100, money.RUB).AsMajorUnits()
-		return p1 * reward, nil
+		r := p1 * reward
+		logger.Log.Debug("start", zap.Float64("reward", reward), zap.Float64("accrual_rez", r))
+		return r, nil
 	}
 	if rewardType == "pt" {
 		return reward, nil
