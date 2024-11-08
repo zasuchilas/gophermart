@@ -53,9 +53,9 @@ loop:
 				continue
 			}
 			if len(goods) == 0 {
-				logger.Log.Debug("goods is empty")
-				w.resetTimer()
-				continue
+				logger.Log.Debug("goods mechanics list is empty")
+				//w.resetTimer()
+				//continue
 			}
 
 			// getting pack of orders
@@ -90,11 +90,21 @@ func (w *CalculateAccrualWorker) resetTimer() {
 }
 
 func (w *CalculateAccrualWorker) processing(goods []*models.GoodsData, orders []*models.AccrualOrder) {
+	hasGoodsMechanics := len(goods) > 0
 	for _, order := range orders {
 		var (
 			accrual float64
 			err     error
 		)
+
+		if !hasGoodsMechanics {
+			err = w.store.UpdateOrder(context.TODO(), order.ID, common.OrderStatusInvalid, money.NewFromFloat(0, common.Currency))
+			if err != nil {
+				logger.Log.Info("error updating order",
+					zap.String("order_num", order.OrderNum), zap.String("error", err.Error()))
+			}
+			continue
+		}
 
 		// checking order
 		goodsList := order.Receipt.Goods
