@@ -115,7 +115,7 @@ func (w *OrderEnrichWorker) workerProc(jobs <-chan *models.OrderRow) {
 		}
 		// do request
 		// GET /api/orders/{number}
-		u := fmt.Sprintf("http://%s/api/orders/%s", config.AccrualSystemAddress, order.OrderNum)
+		u := fmt.Sprintf("%s/api/orders/%s", config.AccrualSystemAddress, order.OrderNum)
 		response, err := http.Get(u)
 		if err != nil {
 			logger.Log.Info("getting error during request", zap.String("error", err.Error()))
