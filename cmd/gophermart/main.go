@@ -1,3 +1,8 @@
 package main
 
-func main() {}
+import "github.com/zasuchilas/gophermart/internal/gophermart"
+
+func main() {
+	a := gophermart.New()
+	a.Run()
+}

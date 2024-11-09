@@ -1,25 +1,17 @@
-# go-musthave-group-diploma-tpl
+# gophermart
 
-Шаблон репозитория для группового дипломного проекта курса "Go-разработчик"
 
-# Начало работы
+## Use
+- migrations goose
+- openapi generation chi
+- SOLID
+- DDD
+- auth lib (casdoor)
 
-1. Склонируйте репозиторий в любую подходящую директорию на вашем компьютере
-2. В корне репозитория выполните команду `go mod init <name>` (где `<name>` — адрес вашего репозитория на GitHub без
-   префикса `https://`) для создания модуля
+```shell
 
-# Обновление шаблона
+go run ./cmd/gophermart -e develop -l debug -d "host=127.0.0.1 user=gophermart password=pass dbname=gophermart sslmode=disable"
 
-Чтобы иметь возможность получать обновления автотестов и других частей шаблона, выполните команду:
-
-```
-git remote add -m master template https://github.com/yandex-praktikum/go-musthave-group-diploma-tpl.git
-```
-
-Для обновления кода автотестов выполните команду:
+go run ./cmd/accrual -e develop -l debug -d "host=127.0.0.1 user=gophermart password=pass dbname=gophermart sslmode=disable"
 
 ```
-git fetch template && git checkout template/master .github
-```
-
-Затем добавьте полученные изменения в свой репозиторий.
